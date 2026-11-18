@@ -78,7 +78,7 @@ function AuthPage() {
         else setNotice("Account request received. Check your inbox and spam folder for the confirmation email. If it does not arrive, contact support because email delivery may need configuration.");
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + "/auth?mode=recovery",
+          redirectTo: window.location.origin + import.meta.env.BASE_URL + "auth?mode=recovery",
         });
         if (error) toast.error(error.message);
         else setNotice("If an account exists for this email, a password reset link will be sent. Check your inbox and spam folder.");
