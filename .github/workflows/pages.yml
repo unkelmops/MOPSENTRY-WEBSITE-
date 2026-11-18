@@ -1,9 +1,11 @@
-name: Deploy MOPSENTRY website to GitHub Pages
+name: Build and deploy MOPSENTRY to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -11,24 +13,46 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: github-pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload site
-        uses: actions/upload-pages-artifact@v3
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Run tests
+        run: bun run test
+      - name: Build static application
+        run: bun run build
+        env:
+          VITE_SUPABASE_URL: https://zykswpgxfmpjllnlivkd.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_z9qQm67PhhPwpO3jTP3PUw_nM0C4LY-
+      - name: Type-check TypeScript
+        run: bunx tsc --noEmit
+      - name: Prepare GitHub Pages SPA fallback
+        run: |
+          test -f dist/client/index.html
+          cp dist/client/index.html dist/client/404.html
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: .
-      - name: Deploy
+          path: dist/client
+  deploy:
+    if: github.event_name != 'pull_request'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
