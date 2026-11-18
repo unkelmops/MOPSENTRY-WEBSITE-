@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { tradingAccountQuery } from "@/lib/trading-account";
 import { supabase } from "@/integrations/supabase/client";
-import { supabase } from "@/integrations/supabase/client";
 import {
   buildFundamentalOutlook,
   classifyEvent,
