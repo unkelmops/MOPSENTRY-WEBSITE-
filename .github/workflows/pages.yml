@@ -35,12 +35,12 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_z9qQm67PhhPwpO3jTP3PUw_nM0C4LY-
       - name: Prepare GitHub Pages SPA fallback
         run: |
-          test -f .output/public/index.html
-          cp .output/public/index.html .output/public/404.html
+          test -f dist/client/index.html
+          cp dist/client/index.html dist/client/404.html
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .output/public
+          path: dist/client
   deploy:
     if: github.event_name != 'pull_request'
     environment:
