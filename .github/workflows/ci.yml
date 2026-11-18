@@ -23,4 +23,4 @@ jobs:
           VITE_SUPABASE_URL: https://zykswpgxfmpjllnlivkd.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_z9qQm67PhhPwpO3jTP3PUw_nM0C4LY-
       - name: Verify static entrypoint
-        run: test -f .output/public/index.html
+        run: test -f dist/client/index.html
