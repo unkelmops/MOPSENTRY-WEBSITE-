@@ -297,7 +297,9 @@ function Dashboard() {
         </Link>
       )}
 
-      <OverviewMarketPanel />\n\n      <section className="relative isolate overflow-hidden rounded-2xl border bg-card shadow-glow before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/70 before:to-transparent">
+      <OverviewMarketPanel />
+
+      <section className="relative isolate overflow-hidden rounded-2xl border bg-card shadow-glow before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/70 before:to-transparent">
         <div className="flex items-start justify-between gap-4 p-5 pb-3">
           <div>
             <p className="text-sm text-muted-foreground">Account equity</p>
@@ -358,7 +360,9 @@ function Dashboard() {
         <ArrowUpRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
       </Link>
 
-      <OverviewTradeSetup />\n\n      {fresh && !compatibleEA && (
+      <OverviewTradeSetup />
+
+      {fresh && !compatibleEA && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
           <Activity className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-muted-foreground">
