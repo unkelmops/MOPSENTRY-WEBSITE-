@@ -1,4 +1,3 @@
-import { SignalsBackdrop } from "@/components/signals-backdrop";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -333,7 +332,6 @@ function Signals() {
 
   return (
     <>
-    <SignalsBackdrop />
     <div className="signals-page space-y-3 pb-2">
       <section className="signals-hero flex items-center justify-between gap-3 rounded-2xl border border-primary/30 px-3 py-2.5">
         <h1 className="signals-hero-title truncate text-lg font-black tracking-tight">Signals</h1>

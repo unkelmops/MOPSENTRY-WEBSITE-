@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeProvider } from "@/components/theme-picker";
+import { SignalsBackdrop } from "@/components/signals-backdrop";
 
 import appCss from "../styles.css?url";
 
@@ -146,8 +147,11 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <ThemeProvider>
-        <Outlet />
-        <Toaster />
+        <div className="relative isolate min-h-screen">
+          <SignalsBackdrop />
+          <div className="relative z-10 min-h-screen"><Outlet /></div>
+          <Toaster />
+        </div>
       </ThemeProvider>
     </QueryClientProvider>
   );

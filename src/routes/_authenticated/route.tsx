@@ -33,8 +33,8 @@ function AppLayout() {
     navigate({ to: "/auth", replace: true });
   };
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl flex-col bg-glow">
-      <header className="ios-safe-top flex items-center justify-between px-5 pt-6 pb-3">
+    <div className="relative isolate mx-auto flex min-h-screen max-w-7xl flex-col bg-glow">
+      <header className="ios-safe-top relative z-10 flex items-center justify-between px-5 pt-6 pb-3">
         <img
           src={logo}
           alt="MOPSENTRY EA"
@@ -71,7 +71,7 @@ function AppLayout() {
           </SheetContent>
         </Sheet>
       </header>
-      <main className="flex-1 px-5 pb-40 md:px-8">
+      <main className="relative z-10 flex-1 px-5 pb-40 md:px-8">
         <Outlet />
       </main>
       <nav aria-label="Main navigation" className="ios-safe-bottom fixed inset-x-0 bottom-0 z-20 mx-auto max-w-7xl border-t bg-card/95 px-5 pt-2 backdrop-blur-xl">
