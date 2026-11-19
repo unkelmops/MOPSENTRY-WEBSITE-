@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "MOPSENTRY",
+    "slug": "mopsentry-native",
+    "scheme": "mopsentry",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mopsentry.app"
+    },
+    "android": {
+      "package": "com.mopsentry.app",
+      "edgeToEdgeEnabled": true
+    }
+  }
+}

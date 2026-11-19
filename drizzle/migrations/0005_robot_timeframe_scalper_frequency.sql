@@ -1,0 +1,4 @@
+ALTER TABLE public.robot_settings ADD COLUMN timeframe text NOT NULL DEFAULT 'M5' CHECK (timeframe IN ('M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'));
+ALTER TABLE public.robot_settings ADD COLUMN scalper_frequency text NOT NULL DEFAULT 'standard' CHECK (scalper_frequency IN ('standard', 'aggressive'));
+COMMENT ON COLUMN public.robot_settings.timeframe IS 'Single analysis timeframe requested from the EA. Default M5; EA must implement consumption.';
+COMMENT ON COLUMN public.robot_settings.scalper_frequency IS 'Scalper entry frequency preference only; must not raise lot size, risk percent, or max trades.';
