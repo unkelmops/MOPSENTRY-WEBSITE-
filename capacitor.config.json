@@ -1,0 +1,15 @@
+{
+  "appId": "com.mopsentry.app",
+  "appName": "MOPSENTRY",
+  "webDir": "dist/client",
+  "server": {
+    "url": "https://mopsentry-bot.lovable.app",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

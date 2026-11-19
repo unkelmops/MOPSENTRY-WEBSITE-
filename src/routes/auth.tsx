@@ -37,6 +37,7 @@ function AuthPage() {
       recoveryLink = false;
     }
 
+    let redirectTimer: number | undefined;
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         setMode("reset");
@@ -44,7 +45,10 @@ function AuthPage() {
         return;
       }
       if (session && !recoveryLink) {
-        navigate({ to: "/dashboard", replace: true });
+        // Leave the Supabase auth callback before starting a route load that calls getUser().
+        redirectTimer = window.setTimeout(() => {
+          void navigate({ to: "/dashboard", replace: true });
+        }, 0);
       }
     });
 
@@ -57,7 +61,10 @@ function AuthPage() {
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      if (redirectTimer !== undefined) window.clearTimeout(redirectTimer);
+      sub.subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {

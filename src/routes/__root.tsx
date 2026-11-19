@@ -124,12 +124,22 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
+    const timers = new Set<number>();
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      // Supabase holds an auth lock while notifying listeners. Defer route loaders
+      // because the authenticated route calls supabase.auth.getUser().
+      const timer = window.setTimeout(() => {
+        timers.delete(timer);
+        void router.invalidate();
+        if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
+      }, 0);
+      timers.add(timer);
     });
-    return () => data.subscription.unsubscribe();
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      data.subscription.unsubscribe();
+    };
   }, [router, queryClient]);
 
   return (
