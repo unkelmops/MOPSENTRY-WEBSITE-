@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BrainCircuit,
-  CandlestickChart,
   Target,
   Clock3,
   Link2,
