@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  ArrowUpRight,
+  BrainCircuit,
   Clock3,
   Link2,
   Power,
@@ -240,6 +242,22 @@ function Dashboard() {
           </div>
         )}
       </section>
+
+      <Link
+        to="/market-report"
+        className="group relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card/90 to-card p-4 shadow-glow transition-colors hover:border-primary/60"
+      >
+        <span className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-primary/10 blur-2xl" />
+        <span className="flex min-w-0 items-start gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-primary/30 bg-primary/10 text-primary"><BrainCircuit className="h-5 w-5" /></span>
+          <span className="min-w-0">
+            <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">MOPSENTRY INTELLIGENCE</span>
+            <span className="mt-1 block font-semibold text-foreground">AI Market Report</span>
+            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Explore shared market charts and analysis for Gold, US30 and NAS100.</span>
+          </span>
+        </span>
+        <ArrowUpRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+      </Link>
 
       {fresh && !compatibleEA && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
