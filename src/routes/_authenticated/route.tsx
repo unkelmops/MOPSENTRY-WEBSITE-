@@ -5,7 +5,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { ThemePicker } from "@/components/theme-picker";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo-mopsentry-a-clean.png";
-import { SignalsBackdrop } from "@/components/signals-backdrop";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -35,7 +34,6 @@ function AppLayout() {
   };
   return (
     <div className="relative isolate mx-auto flex min-h-screen max-w-7xl flex-col bg-glow">
-      <SignalsBackdrop />
       <header className="ios-safe-top relative z-10 flex items-center justify-between px-5 pt-6 pb-3">
         <img
           src={logo}
