@@ -72,7 +72,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/dashboard" },
+          options: { emailRedirectTo: new URL("dashboard", window.location.origin + import.meta.env.BASE_URL).toString() },
         });
         if (error) toast.error(error.message);
         else setNotice("Account request received. Check your inbox and spam folder for the confirmation email. If it does not arrive, contact support because email delivery may need configuration.");
