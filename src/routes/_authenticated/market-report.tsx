@@ -154,8 +154,8 @@ function MarketReport() {
   return (
     <div className="report-dashboard mx-auto w-full max-w-6xl space-y-4 pb-6">
       <header className="flex items-center gap-3 pt-2">
-        <BrainCircuit className="h-6 w-6 shrink-0 text-primary" />
-        <h1 className="text-2xl font-bold sm:text-3xl">AI Market Report</h1>
+        <Activity className="h-6 w-6 shrink-0 text-primary" />
+        <h1 className="text-2xl font-bold sm:text-3xl">Market Report</h1>
       </header>
 
       <section aria-label="Live market prices" className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-card via-card/95 to-primary/10 p-4 shadow-glow sm:p-5">
