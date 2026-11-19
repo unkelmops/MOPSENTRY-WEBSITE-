@@ -7,6 +7,7 @@ Public browser-facing frontend for MOPSENTRY.
 - **Frontend:** React + TanStack Start SPA mode + Tailwind.
 - **Backend:** Personal Supabase project and authenticated Edge Functions.
 - **Native app:** The Expo/React Native project lives in `native-app/` and has its own package and setup instructions.
+- **Auth routing:** Web and native redirects are deferred until Supabase auth callbacks finish, avoiding nested auth-lock requests.
 - **EA services:** Remain in the private MOPSENTRY repository and Supabase. This repository does not contain the EA source, service-role keys, or database passwords.
 
 ## Local development
