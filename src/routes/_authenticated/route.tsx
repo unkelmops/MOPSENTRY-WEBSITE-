@@ -20,7 +20,7 @@ const tabs = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/control", label: "Robot", icon: Bot },
   { to: "/signals", label: "Signals", icon: Radio },
-  { to: "/market-report", label: "AI Report", icon: BrainCircuit },
+  { to: "/market-report", label: "Market Report", icon: BrainCircuit },
 ] as const;
 
 function AppLayout() {

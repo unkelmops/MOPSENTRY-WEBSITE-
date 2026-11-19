@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BrainCircuit,
+  Target,
   Clock3,
   Link2,
   Power,
@@ -28,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { robotSettingsQuery } from "@/lib/robot-settings";
 import { tradingAccountQuery } from "@/lib/trading-account";
 import { cn } from "@/lib/utils";
+import { loadMarketSnapshot, type MarketQuote, type MarketCandle, type MarketFeedHealth } from "@/lib/market-data";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Overview — MOPSENTRY EA" }] }),
@@ -59,6 +61,102 @@ function DashboardLoading() {
 
 const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+
+function OverviewMarketPanel() {
+  const [reference, setReference] = useState<MarketQuote | null>(null);
+  const [broker, setBroker] = useState<MarketQuote | null>(null);
+  const [candles, setCandles] = useState<MarketCandle[]>([]);
+  const [health, setHealth] = useState<MarketFeedHealth[]>([]);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        const snapshot = await loadMarketSnapshot("XAUUSD", "H1");
+        if (!active) return;
+        setReference(snapshot.quotes.find((quote) => quote.source === "independent") ?? null);
+        setBroker(snapshot.quotes.find((quote) => quote.source === "mt5_broker") ?? null);
+        setCandles(snapshot.candles);
+        setHealth(snapshot.health);
+        setError(Boolean(snapshot.syncError));
+      } catch {
+        if (active) setError(true);
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
+
+  const referenceHealth = health.find((item) => item.source === "independent");
+  const brokerHealth = health.find((item) => item.source === "mt5_broker");
+  const quoteIsFresh = (quote: MarketQuote | null) => Boolean(quote && Date.now() - new Date(quote.observed_at).getTime() >= 0 && Date.now() - new Date(quote.observed_at).getTime() < 60_000);
+  const brokerConnected = brokerHealth?.status === "healthy" && quoteIsFresh(broker);
+  const closes = candles.slice(-48).map((candle) => candle.close);
+  const low = closes.length ? Math.min(...closes) : 0;
+  const high = closes.length ? Math.max(...closes) : 1;
+  const points = closes.map((value, index) => {
+    const x = closes.length < 2 ? 50 : (index / (closes.length - 1)) * 100;
+    const y = 35 - ((value - low) / Math.max(high - low, 0.000001)) * 30;
+    return `${x},${y}`;
+  }).join(" ");
+  const format = (value: number | null) => value == null ? "—" : new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+
+  return (
+    <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-card via-card/90 to-primary/10 p-4 shadow-glow sm:p-5" aria-label="Market overview">
+      <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+      <div className="relative grid gap-4 md:grid-cols-[1.05fr_1fr] md:items-center">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-dot" /> Market pulse · XAUUSD
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">Shared market price</p>
+          <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{format(reference?.last ?? null)}</p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span>Bid <strong className="num text-foreground">{format(reference?.bid ?? null)}</strong></span>
+            <span>Ask <strong className="num text-foreground">{format(reference?.ask ?? null)}</strong></span>
+            <span className={referenceHealth?.status === "healthy" ? "text-profit" : "text-muted-foreground"}>{referenceHealth?.status === "healthy" ? "Live reference" : referenceHealth?.status?.replace("_", " ") ?? "Waiting for feed"}</span>
+          </div>
+          {brokerConnected && <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-profit/30 bg-profit/10 px-3 py-1.5 text-xs"><span className="h-1.5 w-1.5 rounded-full bg-profit" /> Broker price <strong className="num">{format(broker?.last ?? null)}</strong></div>}
+          {error && <p className="mt-2 text-[11px] text-muted-foreground">Feed refresh issue. Showing the latest verified data available.</p>}
+        </div>
+        <div className="min-w-0">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Gold · H1 price action</span>
+            <span className="text-[10px] text-muted-foreground">{candles.length ? `${candles.length} candles` : "Chart waiting"}</span>
+          </div>
+          <div className="h-24 overflow-hidden rounded-xl border border-border/60 bg-background/30 p-2 sm:h-28">
+            {closes.length > 1 ? <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="h-full w-full" role="img" aria-label="Gold hourly reference price trend"><defs><linearGradient id="overviewGoldFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity=".28"/><stop offset="100%" stopColor="var(--primary)" stopOpacity="0"/></linearGradient></defs><polygon points={`0,40 ${points} 100,40`} fill="url(#overviewGoldFill)"/><polyline points={points} fill="none" stroke="var(--primary)" strokeWidth="1.5" vectorEffect="non-scaling-stroke"/></svg> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Waiting for verified candle history</div>}
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <span className="text-[10px] text-muted-foreground">Reference feed · refreshes every 15 sec</span>
+            <Link to="/market-report" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline">Open Market Report <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OverviewTradeSetup() {
+  return (
+    <section className="relative overflow-hidden rounded-2xl border border-report-highlight/30 bg-gradient-to-r from-report-highlight/10 via-card/90 to-card p-4 sm:p-5" aria-label="Trade setup preview">
+      <div className="flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-report-highlight/30 bg-report-highlight/10 text-report-highlight"><Target className="h-5 w-5" /></div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-report-highlight">Setup watch</p><h2 className="mt-1 font-semibold">Trade Setup</h2></div>
+            <span className="rounded-full border border-border px-2.5 py-1 text-[10px] font-medium text-muted-foreground">No confirmed setup</span>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">Entry, stop loss and targets will appear here only when the market analysis confirms a valid setup. No levels are being guessed.</p>
+          <Link to="/market-report" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-report-highlight hover:underline">View setup analysis <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function Dashboard() {
   const qc = useQueryClient();
@@ -156,7 +254,7 @@ function Dashboard() {
   const disabledClose = !fresh || !compatibleEA || rawTrades.length === 0 || closeAll.isPending;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 pb-24">
+    <div className="mx-auto w-full max-w-6xl space-y-4 pb-24">
       <div className={cn("flex items-center justify-between rounded-2xl border p-5", fresh ? "border-primary bg-primary/10 shadow-glow" : "bg-card")}>
         <div>
           <p className="text-sm text-muted-foreground">Trading account</p>
@@ -197,6 +295,8 @@ function Dashboard() {
           </span>
         </Link>
       )}
+
+      <OverviewMarketPanel />
 
       <section className="relative isolate overflow-hidden rounded-2xl border bg-card shadow-glow before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/70 before:to-transparent">
         <div className="flex items-start justify-between gap-4 p-5 pb-3">
@@ -252,12 +352,14 @@ function Dashboard() {
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-primary/30 bg-primary/10 text-primary"><BrainCircuit className="h-5 w-5" /></span>
           <span className="min-w-0">
             <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">MOPSENTRY INTELLIGENCE</span>
-            <span className="mt-1 block font-semibold text-foreground">AI Market Report</span>
+            <span className="mt-1 block font-semibold text-foreground">Market Report</span>
             <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Explore shared market charts and analysis for Gold, US30 and NAS100.</span>
           </span>
         </span>
         <ArrowUpRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
       </Link>
+
+      <OverviewTradeSetup />
 
       {fresh && !compatibleEA && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
