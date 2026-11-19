@@ -104,7 +104,7 @@ function CandleChart({ candles }: { candles: MarketCandle[] }) {
         const color = up ? "var(--profit)" : "var(--loss)";
         return <g key={candle.candle_open_at}><line x1={x} x2={x} y1={y(candle.high)} y2={y(candle.low)} stroke={color} strokeWidth="1.4"/><rect x={x - bodyWidth / 2} y={bodyTop} width={bodyWidth} height={bodyHeight} rx="1" fill={color} stroke={color}/></g>;
       })}
-      {labels.map((index) => <text key={index} x={left + step * index + step / 2} y={height - 7} fill="var(--muted-foreground)" fontSize="11" textAnchor={index === 0 ? "start" : index === rows.length - 1 ? "end" : "middle"}>{new Date(rows[index].candle_open_at).toLocaleString([], { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</text>)}
+      {labels.map((index) => { const candle = rows[index]; if (!candle) return null; return <text key={index} x={left + step * index + step / 2} y={height - 7} fill="var(--muted-foreground)" fontSize="11" textAnchor={index === 0 ? "start" : index === rows.length - 1 ? "end" : "middle"}>{new Date(candle.candle_open_at).toLocaleString([], { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}</text>; })}
     </svg>
   );
 }
