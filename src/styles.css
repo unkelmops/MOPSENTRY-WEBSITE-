@@ -314,3 +314,14 @@ body.app-ignite { animation: app-ignite-body 1.6s ease-out; }
 @media (prefers-reduced-motion: reduce) {
   .mops-grid, .mops-cube, .mops-ring3d, .mops-particle, .start-live, body.app-ignite, body.app-ignite::after { animation: none !important; }
 }
+
+
+/* Shared animated particle scene across every authenticated website page. */
+.mops-scene { z-index: 0; opacity: .58; }
+.mops-scene .mops-grid { opacity: .32; }
+.mops-scene .mops-cube { opacity: .32; }
+.mops-scene .mops-ring3d { opacity: .38; }
+.mops-scene .mops-particle { opacity: .72; }
+@media (prefers-reduced-motion: reduce) {
+  .mops-scene .mops-grid, .mops-scene .mops-cube, .mops-scene .mops-ring3d, .mops-scene .mops-particle { animation: none !important; }
+}
