@@ -93,11 +93,23 @@ export default function HomeScreen() {
       finally { if (mounted) setLoading(false); }
     };
     void load();
-    const timer = setInterval(() => { if (mounted) void load(); }, 5000);
+    const refreshTimer = setInterval(() => { if (mounted) void load(); }, 5000);
+    const redirectTimers = new Set<ReturnType<typeof setTimeout>>();
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!nextSession) router.replace("/");
+      if (!nextSession) {
+        const redirectTimer = setTimeout(() => {
+          redirectTimers.delete(redirectTimer);
+          router.replace("/");
+        }, 0);
+        redirectTimers.add(redirectTimer);
+      }
     });
-    return () => { mounted = false; clearInterval(timer); data.subscription.unsubscribe(); };
+    return () => {
+      mounted = false;
+      clearInterval(refreshTimer);
+      redirectTimers.forEach(clearTimeout);
+      data.subscription.unsubscribe();
+    };
   }, [refresh]);
 
   async function signOut() {

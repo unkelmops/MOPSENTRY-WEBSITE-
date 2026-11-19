@@ -26,11 +26,16 @@ export default function SignInScreen() {
     supabase.auth.getSession().then(({ data }) => {
       if (mounted && data.session) router.replace("/home");
     });
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined;
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) router.replace("/home");
+      if (session) {
+        // Let Supabase finish its auth callback before the Overview screen calls getUser().
+        redirectTimer = setTimeout(() => router.replace("/home"), 0);
+      }
     });
     return () => {
       mounted = false;
+      if (redirectTimer) clearTimeout(redirectTimer);
       data.subscription.unsubscribe();
     };
   }, []);
