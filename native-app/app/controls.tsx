@@ -160,7 +160,7 @@ export default function ControlsScreen() {
   const waiting = command ? ["pending", "delivered"].includes(command.status) : false;
 
   if (loading) {
-    return <View style={styles.loading}><ActivityIndicator color=palette.blue /><Text style={styles.muted}>Loading robot controls…</Text></View>;
+    return <View style={styles.loading}><ActivityIndicator color={palette.blue} /><Text style={styles.muted}>Loading robot controls…</Text></View>;
   }
 
   return (

@@ -52,7 +52,7 @@ export default function SettingsScreen() {
   }
 
   if (loading) {
-    return <View style={styles.loading}><ActivityIndicator color=palette.blue /><Text style={styles.muted}>Loading settings…</Text></View>;
+    return <View style={styles.loading}><ActivityIndicator color={palette.blue} /><Text style={styles.muted}>Loading settings…</Text></View>;
   }
 
   return (

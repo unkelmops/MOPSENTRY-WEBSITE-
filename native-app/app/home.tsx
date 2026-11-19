@@ -109,7 +109,7 @@ export default function HomeScreen() {
   const connected = account?.status === "connected" && Number.isFinite(heartbeat) && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 30000;
 
   if (loading) {
-    return <View style={styles.loading}><ActivityIndicator color=palette.blue /><Text style={styles.muted}>Loading your secure session…</Text></View>;
+    return <View style={styles.loading}><ActivityIndicator color={palette.blue} /><Text style={styles.muted}>Loading your secure session…</Text></View>;
   }
 
   return (
