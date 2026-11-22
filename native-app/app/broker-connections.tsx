@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { palette } from "../src/lib/theme";
+import { BrandHeader } from "../src/components/BrandHeader";
 
 type ConnectionKind = "mt5" | "direct-monitor" | "api" | "future";
 
@@ -45,6 +46,7 @@ export default function BrokerConnectionsScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
+        <BrandHeader />
         <Pressable onPress={() => router.back()} style={styles.back}>
           <Text style={styles.backText}>‹  OVERVIEW</Text>
         </Pressable>
