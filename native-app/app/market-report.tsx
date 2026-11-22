@@ -48,8 +48,8 @@ function CandlePlot({ candles }: { candles: Candle[] }) {
           const bodyHeight = Math.max(1.5, Math.abs(close - open));
           return (
             <View key={candle.candle_open_at + index} style={styles.candleSlot}>
-              <View style={[styles.wick, { top: top + "%", height: Math.max(1, bottom - top) + "%", backgroundColor: color }]} />
-              <View style={[styles.candleBody, { top: bodyTop + "%", height: bodyHeight + "%", backgroundColor: color }]} />
+              <View style={[styles.wick, { top: (top + "%") as `${number}%`, height: (Math.max(1, bottom - top) + "%") as `${number}%`, backgroundColor: color }]} />
+              <View style={[styles.candleBody, { top: (bodyTop + "%") as `${number}%`, height: (bodyHeight + "%") as `${number}%`, backgroundColor: color }]} />
             </View>
           );
         })}
