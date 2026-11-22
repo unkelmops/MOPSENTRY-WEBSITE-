@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { palette } from "../src/lib/theme";
 import { BrandHeader } from "../src/components/BrandHeader";
+import { AmbientBackground } from "../src/components/AmbientBackground";
 
 type ConnectionKind = "mt5" | "direct-monitor" | "api" | "future";
 
@@ -45,6 +46,7 @@ export default function BrokerConnectionsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={styles.content}>
         <BrandHeader />
         <Pressable onPress={() => router.back()} style={styles.back}>
