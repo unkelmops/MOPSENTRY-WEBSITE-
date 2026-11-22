@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette, radius, spacing } from "../src/lib/theme";
+import { AmbientBackground } from "../src/components/AmbientBackground";
 
 export default function SignInScreen() {
   const [email, setEmail] = useState("");
@@ -66,6 +67,7 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AmbientBackground />
       <KeyboardAvoidingView
         style={styles.keyboard}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
