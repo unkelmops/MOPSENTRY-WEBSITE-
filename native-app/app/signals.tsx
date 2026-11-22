@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
+import { BrandHeader } from "../src/components/BrandHeader";
 import { AmbientBackground } from "../src/components/AmbientBackground";
 
 type Report = {
@@ -55,6 +56,7 @@ export default function SignalsScreen() {
     <SafeAreaView style={styles.safe}>
       <AmbientBackground />
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} tintColor={palette.blue} onRefresh={() => { setRefreshing(true); void refresh(); }} />} contentContainerStyle={styles.content}>
+        <BrandHeader />
         <Text style={styles.eyebrow}>MOPSENTRY · MARKET INTELLIGENCE</Text>
         <Text style={styles.title}>Signals</Text>
         <Text style={styles.subtitle}>Confirmed report outputs and recorded prediction history</Text>
