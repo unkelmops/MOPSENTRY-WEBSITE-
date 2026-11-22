@@ -16,8 +16,7 @@
       "bundleIdentifier": "com.mopsentry.app"
     },
     "android": {
-      "package": "com.mopsentry.app",
-      "edgeToEdgeEnabled": true
+      "package": "com.mopsentry.app"
     }
   }
 }
