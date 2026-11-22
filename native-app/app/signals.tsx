@@ -72,7 +72,7 @@ export default function SignalsScreen() {
 
   useEffect(() => {
     void refreshAccount();
-    const timer = setInterval(() => void refreshAccount(), 5_000);
+    const timer = setInterval(() => void refreshAccount(), 10_000);
     return () => clearInterval(timer);
   }, [refreshAccount]);
 
@@ -96,7 +96,7 @@ export default function SignalsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} tintColor={palette.blue} onRefresh={refreshAll} />} contentContainerStyle={styles.content}>
         <BrandHeader />
         <Text style={styles.eyebrow}>MOPSENTRY · INTELLIGENCE</Text>
-        <View style={styles.headingRow}><View><Text style={styles.title}>Signals</Text><Text style={styles.subtitle}>News, live trades and pending orders</Text></View><View style={styles.statusPill}><View style={styles.liveDot}/><Text style={styles.statusText}>LIVE</Text></View></View>
+        <View style={styles.headingRow}><View><Text style={styles.title}>Signals</Text><Text style={styles.subtitle}>News, live trades and pending orders</Text></View><View style={styles.statusPill}><View style={styles.liveDot}/><Text style={styles.statusText}>MONITOR</Text></View></View>
 
         <View style={styles.summaryRow}>
           <Pressable onPress={() => setTab("trades")} style={styles.summaryCard}><Text style={styles.summaryValue}>{live.length}</Text><Text style={styles.summaryLabel}>LIVE TRADES</Text></Pressable>
@@ -158,7 +158,7 @@ export default function SignalsScreen() {
         )}
 
         {accountError ? <Text style={styles.error}>{accountError}</Text> : null}
-        <Text style={styles.refreshText}>Account data refreshes every 5 seconds{updatedAt ? " · Updated " + updatedAt.toLocaleTimeString() : ""}</Text>
+        <Text style={styles.refreshText}>Account data refreshes every 10 seconds{updatedAt ? " · Updated " + updatedAt.toLocaleTimeString() : ""}</Text>
         <Text style={styles.footer}>News signals are possibilities, not guarantees. Live trade and pending-order information is displayed as reported by the connected EA. This screen does not place trades.</Text>
       </ScrollView>
     </SafeAreaView>
@@ -173,8 +173,8 @@ const styles = StyleSheet.create({
   title: { color: palette.text, fontSize: 28, fontWeight: "900" },
   subtitle: { color: palette.muted, fontSize: 10, marginTop: 5 },
   statusPill: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: "#1C765E", backgroundColor: "#0C2A29", borderRadius: 18, paddingHorizontal: 9, paddingVertical: 6 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.green },
-  statusText: { color: palette.green, fontSize: 8, fontWeight: "900" },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.blue },
+  statusText: { color: palette.blueBright, fontSize: 8, fontWeight: "900" },
   summaryRow: { flexDirection: "row", gap: 7, marginBottom: 17 },
   summaryCard: { flex: 1, backgroundColor: "#0B1A2B", borderWidth: 1, borderColor: palette.border, borderRadius: 13, padding: 11 },
   summaryValue: { color: palette.text, fontSize: 19, fontWeight: "900" },
