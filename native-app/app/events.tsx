@@ -25,7 +25,6 @@ export default function EventsScreen() {
 
   const refresh = useCallback(async () => {
     try {
-      const now = new Date().toISOString();
       const [eventResult, newsResult] = await Promise.all([
         supabase.from("fundamental_event_history")
           .select("event_id,title,currency,impact,event_time,period,previous_value,forecast_value,actual_value,event_status,source")
