@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
+import { AmbientBackground } from "../src/components/AmbientBackground";
 
 type Account = {
   status: string;
@@ -174,6 +175,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View style={styles.headerBrand}>
