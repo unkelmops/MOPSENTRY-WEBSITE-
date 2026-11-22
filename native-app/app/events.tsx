@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
+import { BrandHeader } from "../src/components/BrandHeader";
 import { AmbientBackground } from "../src/components/AmbientBackground";
 
 type EventRow = {
@@ -28,7 +29,7 @@ export default function EventsScreen() {
       const [eventResult, newsResult] = await Promise.all([
         supabase.from("fundamental_event_history")
           .select("event_id,title,currency,impact,event_time,period,previous_value,forecast_value,actual_value,event_status,source")
-          .eq("currency", "USD").order("event_time", { ascending: true }).limit(100),
+          .eq("currency", "USD").gte("event_time", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()).lte("event_time", new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()).order("event_time", { ascending: true }).limit(100),
         supabase.from("market_news")
           .select("id,title,summary,country,currency,impact,published_at,event_at,instrument_symbols,url")
           .order("published_at", { ascending: false, nullsFirst: false }).limit(20),
@@ -54,6 +55,7 @@ export default function EventsScreen() {
     <SafeAreaView style={styles.safe}>
       <AmbientBackground />
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} tintColor={palette.blue} onRefresh={() => { setRefreshing(true); void refresh(); }} />} contentContainerStyle={styles.content}>
+        <BrandHeader />
         <Text style={styles.eyebrow}>MOPSENTRY · CALENDAR</Text>
         <View style={styles.headingRow}><View><Text style={styles.title}>Events</Text><Text style={styles.subtitle}>USD economic calendar & market headlines</Text></View><View style={styles.countPill}><Text style={styles.count}>{upcomingCount}</Text><Text style={styles.countLabel}>UPCOMING</Text></View></View>
         <View style={styles.filterRow}>
