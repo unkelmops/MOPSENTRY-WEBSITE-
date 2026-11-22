@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { directAccountsApi, directAccountStatus, DirectAccountSignInRequired, pendingDirectAccount, type DirectAccount } from "../src/lib/direct-mt5";
 import { directTheme as theme } from "../src/lib/direct-theme";
+import { BrandHeader } from "../src/components/BrandHeader";
 
 const api = directAccountsApi(supabase);
 
@@ -79,7 +80,8 @@ export default function DirectAccountsScreen() {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} tintColor={theme.primary} onRefresh={() => { setRefreshing(true); void refresh(); }} />}>
+          refreshControl={<RefreshControl refreshing={refreshing} tintColor={theme.primary} onRefresh={() =>
+          <BrandHeader /> { setRefreshing(true); void refresh(); }} />}>
           <View style={styles.header}>
             <Pressable accessibilityRole="button" accessibilityLabel="Back to Overview" onPress={() => router.back()} style={styles.icon}><Text style={styles.arrow}>‹</Text></Pressable>
             <View style={styles.heading}><Text style={styles.eyebrow}>MOPSENTRY EA · DIRECT ACCOUNTS</Text><Text style={styles.title}>Connect MT5 Account</Text></View>
