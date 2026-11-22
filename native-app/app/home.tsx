@@ -58,6 +58,54 @@ function DataList({ title, value }: { title: string; value: unknown }) {
   );
 }
 
+type MarketQuote = { bid: number | null; ask: number | null; last: number | null };
+type MarketCandle = { close: number };
+function OverviewMarketPreview() {
+  const [quote, setQuote] = useState<MarketQuote | null>(null);
+  const [candles, setCandles] = useState<MarketCandle[]>([]);
+  const [healthy, setHealthy] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        await supabase.functions.invoke("mopsentry-market-sync", { body: { symbol: "XAUUSD", timeframe: "H1" } });
+        const [q, h, status] = await Promise.all([
+          supabase.from("market_quotes").select("bid,ask,last").eq("instrument_symbol", "XAUUSD").eq("source", "independent").order("observed_at", { ascending: false }).limit(1),
+          supabase.from("market_candles").select("close").eq("instrument_symbol", "XAUUSD").eq("source", "independent").eq("timeframe", "H1").order("candle_open_at", { ascending: true }).limit(32),
+          supabase.from("market_data_health").select("status").eq("instrument_symbol", "XAUUSD").eq("source", "independent").maybeSingle(),
+        ]);
+        if (q.error) throw q.error;
+        if (h.error) throw h.error;
+        if (status.error) throw status.error;
+        if (!active) return;
+        setQuote((q.data?.[0] as MarketQuote | undefined) ?? null);
+        setCandles((h.data ?? []) as MarketCandle[]);
+        setHealthy(status.data?.status === "healthy");
+      } catch { if (active) setHealthy(false); }
+    };
+    void refresh();
+    const timer = setInterval(() => void refresh(), 15_000);
+    return () => { active = false; clearInterval(timer); };
+  }, []);
+  const values = candles.map(c => c.close);
+  const low = values.length ? Math.min(...values) : 0;
+  const high = values.length ? Math.max(...values) : 1;
+  const fmt = (v: number | null | undefined) => v == null ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return <>
+    <Pressable onPress={() => router.push("/market-report")} style={styles.marketPanel}>
+      <View style={styles.marketTop}><View><Text style={styles.marketEyebrow}>MARKET PULSE · XAUUSD</Text><Text style={styles.marketPrice}>{fmt(quote?.last)}</Text></View><Text style={[styles.marketStatus, healthy && styles.marketLive]}>{healthy ? "● LIVE" : "○ WAITING"}</Text></View>
+      <View style={styles.marketQuoteRow}><Text style={styles.marketQuote}>BID  <Text style={styles.marketQuoteStrong}>{fmt(quote?.bid)}</Text></Text><Text style={styles.marketQuote}>ASK  <Text style={styles.marketQuoteStrong}>{fmt(quote?.ask)}</Text></Text></View>
+      <View style={styles.sparkline}>{values.length > 1 ? values.map((v, i) => <View key={i} style={[styles.sparkBar, { height: 8 + ((v - low) / Math.max(high - low, 0.000001)) * 36 }]}/>) : <Text style={styles.marketWaiting}>Waiting for verified Gold candles</Text>}</View>
+      <View style={styles.marketBottom}><Text style={styles.marketCaption}>{candles.length} verified H1 candles</Text><Text style={styles.marketLink}>OPEN MARKET REPORT  ›</Text></View>
+    </Pressable>
+    <Pressable onPress={() => router.push("/market-report")} style={styles.setupPanel}>
+      <View style={styles.setupIcon}><Text style={styles.setupIconText}>◎</Text></View>
+      <View style={{ flex: 1 }}><Text style={styles.setupEyebrow}>SETUP WATCH</Text><Text style={styles.setupTitle}>Trade Setup</Text><Text style={styles.setupDescription}>No confirmed setup. Validated entry, stop loss and targets will appear here.</Text></View>
+      <Text style={styles.setupArrow}>›</Text>
+    </Pressable>
+  </>;
+}
+
 export default function HomeScreen() {
   const [email, setEmail] = useState("");
   const [access, setAccess] = useState<boolean | null>(null);
@@ -134,6 +182,8 @@ export default function HomeScreen() {
           </View>
           <View style={[styles.statusPill, connected ? styles.connected : styles.disconnected]}><View style={[styles.dot, connected ? styles.dotOn : styles.dotOff]} /><Text style={styles.statusText}>{connected ? "MT5 CONNECTED" : "NOT CONNECTED"}</Text></View>
         </View>
+
+        <OverviewMarketPreview />
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>ACCOUNT</Text>
@@ -222,4 +272,26 @@ const styles = StyleSheet.create({
   controlsTitle: { color: palette.text, fontSize: 15, fontWeight: "800" },
   controlsArrow: { color: palette.blueBright, fontSize: 28, fontWeight: "300" },
   settingsLink: { borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surface, borderRadius: 16, padding: 17, marginBottom: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  marketPanel: { borderWidth: 1, borderColor: palette.borderStrong, borderRadius: 20, padding: 16, marginBottom: 12, backgroundColor: "#0B1A2B", overflow: "hidden" },
+  marketTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  marketEyebrow: { color: palette.blueBright, fontSize: 9, fontWeight: "900", letterSpacing: 1.4 },
+  marketPrice: { color: palette.text, fontSize: 30, fontWeight: "900", marginTop: 7 },
+  marketStatus: { color: palette.muted, fontSize: 8, fontWeight: "900" },
+  marketLive: { color: palette.green },
+  marketQuoteRow: { flexDirection: "row", gap: 20, marginTop: 7 },
+  marketQuote: { color: palette.muted, fontSize: 9 },
+  marketQuoteStrong: { color: palette.text, fontWeight: "800" },
+  sparkline: { height: 50, flexDirection: "row", alignItems: "flex-end", gap: 3, marginTop: 14, overflow: "hidden" },
+  sparkBar: { flex: 1, minWidth: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2, backgroundColor: palette.blue },
+  marketWaiting: { color: palette.muted, fontSize: 10, alignSelf: "center" },
+  marketBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 11 },
+  marketCaption: { color: palette.subtle, fontSize: 8, flex: 1 },
+  marketLink: { color: palette.blueBright, fontSize: 8, fontWeight: "900", letterSpacing: 0.4 },
+  setupPanel: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: "#65528D", borderRadius: 17, padding: 14, marginBottom: 14, backgroundColor: "#17162B" },
+  setupIcon: { width: 38, height: 38, borderRadius: 12, borderWidth: 1, borderColor: "#65528D", backgroundColor: "#27213E", alignItems: "center", justifyContent: "center" },
+  setupIconText: { color: "#C8AEFF", fontSize: 20 },
+  setupEyebrow: { color: "#C8AEFF", fontSize: 8, fontWeight: "900", letterSpacing: 1.2 },
+  setupTitle: { color: palette.text, fontSize: 14, fontWeight: "900", marginTop: 3 },
+  setupDescription: { color: palette.muted, fontSize: 9, lineHeight: 14, marginTop: 4 },
+  setupArrow: { color: "#C8AEFF", fontSize: 26, fontWeight: "300" },
 });
