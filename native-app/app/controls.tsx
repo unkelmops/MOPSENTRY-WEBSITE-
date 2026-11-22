@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
+import { AmbientBackground } from "../src/components/AmbientBackground";
 
 type Settings = { is_running: boolean };
 type Account = { status: string; last_heartbeat: string | null };
@@ -165,6 +166,7 @@ export default function ControlsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹  OVERVIEW</Text></Pressable>
         <Text style={styles.eyebrow}>MOPSENTRY NATIVE</Text>
