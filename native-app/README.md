@@ -33,3 +33,55 @@ Validation: from the repository root run `bunx vitest run src/test/direct-mt5.te
 - New signups automatically receive a trading-account profile and fresh EA connection key; App Access must be enabled separately by an administrator.
 
 Never expose a Supabase service-role key in browser or `EXPO_PUBLIC_*` variables. The EA heartbeat endpoint uses a server-side secret.
+
+## Windows and Expo Go setup
+
+The native app is separate from the website and uses Expo SDK 58.
+
+### First setup
+
+Open PowerShell and run:
+
+```powershell
+git clone https://github.com/unkelmops/MOPSENTRY-WEBSITE-.git
+cd MOPSENTRY-WEBSITE-\native-app
+Copy-Item .env.example .env
+npm install
+npx expo start
+```
+
+The supplied `.env.example` already points to the current MOPSENTRY Supabase project and uses its public client key. Keep the values in `.env` unless the project owner changes them. Never put a Supabase service-role key, broker password, or other server secret in this app.
+
+When Expo shows the QR code:
+1. Open Expo Go on your iPhone or Android phone.
+2. Scan the QR code shown in PowerShell.
+3. Wait for MOPSENTRY to load, then sign in with the approved demo login.
+
+If the phone cannot reach the development server over the local network, stop Expo with Ctrl+C and run `npx expo start --tunnel`.
+
+### Updating the app
+
+If the repository is already cloned, open PowerShell in the repository root and run:
+
+```powershell
+git pull origin main
+cd native-app
+npm install
+npx expo start
+```
+
+Do not copy source files individually. Pulling the repository keeps the app, logo, configuration and dependencies together.
+
+### If npm runs out of memory
+
+```powershell
+$env:NODE_OPTIONS="--max-old-space-size=4096"
+npm install
+```
+
+### Safety
+
+- Use the demo login for the first round of testing.
+- Do not enter live broker passwords or API secrets.
+- Robot controls remain subject to the backend's access and connection checks.
+- The local `.env` file is ignored by Git and must never be committed or uploaded to the public repository.
