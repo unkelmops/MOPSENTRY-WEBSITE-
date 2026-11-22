@@ -63,6 +63,7 @@ function CandlePlot({ candles }: { candles: Candle[] }) {
 export default function MarketReportScreen() {
   const [symbol, setSymbol] = useState("XAUUSD");
   const [timeframe, setTimeframe] = useState<(typeof timeframes)[number]>("H1");
+  const [settingsNotice, setSettingsNotice] = useState("");
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [health, setHealth] = useState<FeedHealth[]>([]);
@@ -70,6 +71,49 @@ export default function MarketReportScreen() {
   const [refreshError, setRefreshError] = useState("");
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { data: auth, error: authError } = await supabase.auth.getUser();
+        if (authError || !auth.user) return;
+        const { data, error } = await supabase.from("robot_settings").select("timeframe,pairs").eq("user_id", auth.user.id).maybeSingle();
+        if (error) throw error;
+        if (!active || !data) return;
+        if (timeframes.includes(data.timeframe as (typeof timeframes)[number])) setTimeframe(data.timeframe as (typeof timeframes)[number]);
+        const savedPairs = Array.isArray(data.pairs) ? data.pairs : [];
+        const preferredSymbol = savedPairs.find((value: unknown) => typeof value === "string" && symbols.some(option => option.symbol === value));
+        if (typeof preferredSymbol === "string") setSymbol(preferredSymbol);
+      } catch (error) {
+        if (active) setSettingsNotice(error instanceof Error ? error.message : "Saved EA preferences could not be loaded.");
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  async function saveEaSelection(next: { symbol?: string; timeframe?: (typeof timeframes)[number] }) {
+    setSettingsNotice("");
+    try {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Sign in again to save EA preferences.");
+      const { data: existing, error: readError } = await supabase.from("robot_settings").select("pairs").eq("user_id", auth.user.id).maybeSingle();
+      if (readError) throw readError;
+      const existingPairs = Array.isArray(existing?.pairs) ? existing.pairs.filter((value: unknown): value is string => typeof value === "string") : [];
+      const pairs = next.symbol ? [next.symbol, ...existingPairs.filter(value => value !== next.symbol)] : existingPairs;
+      const payload: { user_id: string; updated_at: string; pairs?: string[]; timeframe?: string } = {
+        user_id: auth.user.id,
+        updated_at: new Date().toISOString(),
+      };
+      if (next.symbol) payload.pairs = pairs;
+      if (next.timeframe) payload.timeframe = next.timeframe;
+      const { error: saveError } = await supabase.from("robot_settings").upsert(payload, { onConflict: "user_id" });
+      if (saveError) throw saveError;
+      setSettingsNotice("Saved to EA preferences. The EA can apply it on its next check-in once its settings reader is updated.");
+    } catch (error) {
+      setSettingsNotice(error instanceof Error ? error.message : "Could not save the EA preference.");
+    }
+  }
 
   const refresh = useCallback(async () => {
     try {
@@ -137,9 +181,10 @@ export default function MarketReportScreen() {
         <Text style={styles.chartCaption}>OHLC candles · {candles.length ? "Verified history" : "No verified candle history yet"}</Text>
 
         <View style={styles.symbolRow}>
-          {symbols.map(item => <Pressable key={item.symbol} onPress={() => { setSymbol(item.symbol); setExpanded(null); }} style={[styles.symbolButton, symbol === item.symbol && styles.symbolSelected]}><Text style={[styles.symbolText, symbol === item.symbol && styles.symbolTextSelected]}>{item.symbol}</Text><Text style={styles.symbolName}>{item.name}</Text></Pressable>)}
+          {symbols.map(item => <Pressable key={item.symbol} onPress={() => { setSymbol(item.symbol); setExpanded(null); void saveEaSelection({ symbol: item.symbol }); }} style={[styles.symbolButton, symbol === item.symbol && styles.symbolSelected]}><Text style={[styles.symbolText, symbol === item.symbol && styles.symbolTextSelected]}>{item.symbol}</Text><Text style={styles.symbolName}>{item.name}</Text></Pressable>)}
         </View>
-        <View style={styles.timeRow}>{timeframes.map(tf => <Pressable key={tf} onPress={() => setTimeframe(tf)} style={[styles.timeButton, timeframe === tf && styles.timeSelected]}><Text style={[styles.timeText, timeframe === tf && styles.timeTextSelected]}>{tf}</Text></Pressable>)}</View>
+        <View style={styles.timeRow}>{timeframes.map(tf => <Pressable key={tf} onPress={() => { setTimeframe(tf); void saveEaSelection({ timeframe: tf }); }} style={[styles.timeButton, timeframe === tf && styles.timeSelected]}><Text style={[styles.timeText, timeframe === tf && styles.timeTextSelected]}>{tf}</Text></Pressable>)}</View>
+        {settingsNotice ? <Text style={styles.settingsNotice}>{settingsNotice}</Text> : null}
 
         <View style={styles.reportHeader}><View><Text style={styles.sectionTitle}>Analysis</Text><Text style={styles.muted}>{symbol} · {timeframe}</Text></View><Text style={styles.timestamp}>Checked {time(updatedAt)}</Text></View>
         {sections.map((section, index) => {
@@ -202,6 +247,7 @@ const styles = StyleSheet.create({
   timeSelected: { backgroundColor: palette.blueGlow, borderWidth: 1, borderColor: palette.borderStrong },
   timeText: { color: palette.muted, fontSize: 10, fontWeight: "800" },
   timeTextSelected: { color: palette.blueBright },
+  settingsNotice: { color: palette.amber, fontSize: 9, lineHeight: 14, marginTop: -12, marginBottom: 16 },
   reportHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   analysisCard: { borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surface, borderRadius: 14, padding: 14, marginBottom: 9 },
   analysisCardOpen: { borderColor: palette.borderStrong, backgroundColor: "#0D1D30" },
