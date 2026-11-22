@@ -1,38 +1,38 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { palette } from "../src/lib/theme";
 
 const destinations = [
-  { name: "home", label: "OVERVIEW", glyph: "⌂" },
-  { name: "market-report", label: "MARKET", glyph: "⌁" },
-  { name: "events", label: "EVENTS", glyph: "◷" },
-  { name: "signals", label: "SIGNALS", glyph: "⌖" },
-  { name: "controls", label: "ROBOT", glyph: "◈" },
-  { name: "settings", label: "ACCOUNT", glyph: "◎" },
+  { name: "home", href: "/home", label: "OVERVIEW", glyph: "⌂" },
+  { name: "market-report", href: "/market-report", label: "MARKET", glyph: "⌁" },
+  { name: "events", href: "/events", label: "EVENTS", glyph: "◷" },
+  { name: "signals", href: "/signals", label: "SIGNALS", glyph: "⌖" },
+  { name: "controls", href: "/controls", label: "ROBOT", glyph: "◈" },
+  { name: "settings", href: "/settings", label: "ACCOUNT", glyph: "◎" },
 ] as const;
 
 function AppTabs() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <>
       <StatusBar style="light" />
       <Tabs
-        initialRouteName="index"
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: palette.background },
           animation: "fade",
         }}
-        tabBar={({ state, navigation }) => {
+        tabBar={({ state }) => {
           const activeRoute = state.routes[state.index]?.name;
-          if (!destinations.some((item) => item.name === activeRoute)) return null;
+          if (!destinations.some(item => item.name === activeRoute)) return null;
 
           return (
             <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-              {destinations.map((item) => {
+              {destinations.map(item => {
                 const active = activeRoute === item.name;
                 return (
                   <Pressable
@@ -40,7 +40,7 @@ function AppTabs() {
                     accessibilityRole="tab"
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={item.label}
-                    onPress={() => navigation.navigate(item.name)}
+                    onPress={() => router.navigate(item.href)}
                     style={styles.item}
                   >
                     <Text style={[styles.glyph, active && styles.glyphActive]}>{item.glyph}</Text>
@@ -76,14 +76,7 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  bar: {
-    flexDirection: "row",
-    backgroundColor: "#091321",
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-    paddingTop: 10,
-    paddingHorizontal: 7,
-  },
+  bar: { flexDirection: "row", backgroundColor: "#091321", borderTopWidth: 1, borderTopColor: palette.border, paddingTop: 10, paddingHorizontal: 7 },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4 },
   glyph: { color: palette.subtle, fontSize: 21, lineHeight: 24 },
   glyphActive: { color: palette.blueBright },
