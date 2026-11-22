@@ -6,6 +6,7 @@ import { palette } from "../src/lib/theme";
 
 const destinations = [
   { name: "home", label: "OVERVIEW", glyph: "⌂" },
+  { name: "market-report", label: "MARKET", glyph: "⌁" },
   { name: "controls", label: "ROBOT", glyph: "◈" },
   { name: "settings", label: "ACCOUNT", glyph: "◎" },
 ] as const;
@@ -52,6 +53,7 @@ function AppTabs() {
       >
         <Tabs.Screen name="index" options={{ href: null }} />
         <Tabs.Screen name="home" options={{ title: "Overview" }} />
+        <Tabs.Screen name="market-report" options={{ title: "Market Report" }} />
         <Tabs.Screen name="controls" options={{ title: "Robot" }} />
         <Tabs.Screen name="settings" options={{ title: "Account" }} />
         <Tabs.Screen name="broker-connections" options={{ href: null }} />
