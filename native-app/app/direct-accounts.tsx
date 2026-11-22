@@ -6,6 +6,7 @@ import { supabase } from "../src/lib/supabase";
 import { directAccountsApi, directAccountStatus, DirectAccountSignInRequired, pendingDirectAccount, type DirectAccount } from "../src/lib/direct-mt5";
 import { directTheme as theme } from "../src/lib/direct-theme";
 import { BrandHeader } from "../src/components/BrandHeader";
+import { AmbientBackground } from "../src/components/AmbientBackground";
 
 const api = directAccountsApi(supabase);
 
@@ -78,6 +79,7 @@ export default function DirectAccountsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <AmbientBackground />
       <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} tintColor={theme.primary} onRefresh={() => { setRefreshing(true); void refresh(); }} />}>
