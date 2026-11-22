@@ -7,6 +7,8 @@ import { palette } from "../src/lib/theme";
 const destinations = [
   { name: "home", label: "OVERVIEW", glyph: "⌂" },
   { name: "market-report", label: "MARKET", glyph: "⌁" },
+  { name: "events", label: "EVENTS", glyph: "◷" },
+  { name: "signals", label: "SIGNALS", glyph: "⌖" },
   { name: "controls", label: "ROBOT", glyph: "◈" },
   { name: "settings", label: "ACCOUNT", glyph: "◎" },
 ] as const;
@@ -54,6 +56,8 @@ function AppTabs() {
         <Tabs.Screen name="index" options={{ href: null }} />
         <Tabs.Screen name="home" options={{ title: "Overview" }} />
         <Tabs.Screen name="market-report" options={{ title: "Market Report" }} />
+        <Tabs.Screen name="events" options={{ title: "Events" }} />
+        <Tabs.Screen name="signals" options={{ title: "Signals" }} />
         <Tabs.Screen name="controls" options={{ title: "Robot" }} />
         <Tabs.Screen name="settings" options={{ title: "Account" }} />
         <Tabs.Screen name="broker-connections" options={{ href: null }} />
@@ -78,12 +82,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: palette.border,
     paddingTop: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 7,
   },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4 },
   glyph: { color: palette.subtle, fontSize: 21, lineHeight: 24 },
   glyphActive: { color: palette.blueBright },
-  label: { color: palette.subtle, fontSize: 8, fontWeight: "800", letterSpacing: 1 },
+  label: { color: palette.subtle, fontSize: 7, fontWeight: "800", letterSpacing: 0.5 },
   labelActive: { color: palette.blueBright },
   indicator: { width: 18, height: 2, borderRadius: 2, backgroundColor: palette.blue, marginTop: 3 },
   indicatorSpacer: { width: 18, height: 2, marginTop: 3 },
