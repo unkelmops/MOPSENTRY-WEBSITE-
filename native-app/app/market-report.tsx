@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
+import { BrandHeader } from "../src/components/BrandHeader";
 import { AmbientBackground } from "../src/components/AmbientBackground";
 
 type Quote = { source: string; provider_symbol: string; bid: number | null; ask: number | null; last: number | null; observed_at: string };
@@ -115,6 +116,7 @@ export default function MarketReportScreen() {
     <SafeAreaView style={styles.safe}>
       <AmbientBackground />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <BrandHeader />
         <View style={styles.header}>
           <View><Text style={styles.eyebrow}>MOPSENTRY · INTELLIGENCE</Text><Text style={styles.title}>Market Report</Text></View>
           <View style={styles.liveBadge}><View style={styles.liveDot}/><Text style={styles.liveText}>LIVE DATA</Text></View>
