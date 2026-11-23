@@ -138,7 +138,7 @@ function Account() {
           </button>
         </div>
         <p className="mb-3 text-xs text-muted-foreground">
-          This key links the robot on your VPS to your account. Keep it private.
+          This compact 20-character key links your EA to your MOPSENTRY account. Copy it into the EA settings and keep it private.
         </p>
         <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-3">
           <span className="num min-w-0 flex-1 break-all text-base font-semibold tracking-widest text-primary">
