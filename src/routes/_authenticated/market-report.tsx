@@ -37,7 +37,7 @@ const folders = [
     id: "structure", title: "Market Structure & Trend", icon: Waves,
     description: "Market direction and signs of a trend change.",
     pending: "Awaiting validated price history.",
-    metrics: ["Trend direction", "Break of structure (BOS)", "Change of character (CHoCH)"],
+    metrics: ["Trend direction", "Structure break (BOS)", "Latest swing high / low"],
     detail: "BOS means price has broken a previous swing level; CHoCH may indicate a change in direction. No swings, candle history or trend alignment have been confirmed.",
   },
   {
@@ -51,7 +51,7 @@ const folders = [
     id: "liquidity", title: "Liquidity & Sweeps", icon: Crosshair,
     description: "Where orders may gather and whether price swept them.",
     pending: "Awaiting confirmed price structure.",
-    metrics: ["Liquidity areas", "Sweep status", "Reclaim level"],
+    metrics: ["Sweep status", "Swept level", "Sweep direction"],
     detail: "No liquidity pools, sweeps or reclaim levels have been confirmed for this report.",
   },
   {
@@ -125,7 +125,7 @@ function MarketReport() {
   const analysisMetrics: Record<string, string[]> = {
     structure: [analysis.trend.toUpperCase(), analysis.structure, `High ${price(analysis.swingHigh)} / Low ${price(analysis.swingLow)}`],
     crt: [price(analysis.rangeHigh), price(analysis.rangeLow), price(analysis.rangeMid)],
-    liquidity: [analysis.liquidity, price(analysis.liquidityLevel), analysis.liquidity === "unavailable" ? "Insufficient history" : "Last candle"],
+    liquidity: [analysis.liquidity, price(analysis.liquidityLevel), analysis.liquidity === "buy-side sweep" ? "Buy-side" : analysis.liquidity === "sell-side sweep" ? "Sell-side" : "—"],
   };
   const analysisNotes: Record<string, string> = {
     structure: analysis.trendNote,
