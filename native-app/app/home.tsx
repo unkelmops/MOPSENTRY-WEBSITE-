@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
@@ -12,6 +12,7 @@ type Account = {
   broker_server: string | null;
   login: string | null;
   balance: number | null;
+  account_currency: string | null;
   equity: number | null;
   last_heartbeat: string | null;
   open_trades: unknown;
@@ -32,8 +33,12 @@ function displayValue(value: unknown): string {
   return String(value);
 }
 
-function money(value: number | null) {
-  return value === null ? "—" : value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function money(value: number | null, currency: string | null) {
+  if (value === null) return "—";
+  if (currency && /^[A-Z]{3}$/.test(currency)) {
+    try { return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(value); } catch { /* use plain amount below */ }
+  }
+  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function DataList({ title, value }: { title: string; value: unknown }) {
@@ -115,6 +120,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [robotSettings, setRobotSettings] = useState<{ break_even_enabled: boolean; break_even_trigger: number } | null>(null);
+  const [breakEvenDraft, setBreakEvenDraft] = useState("10");
+  const [savingBreakEven, setSavingBreakEven] = useState(false);
 
   const refresh = useCallback(async () => {
     const { data: auth, error: authError } = await supabase.auth.getUser();
@@ -123,14 +131,17 @@ export default function HomeScreen() {
       return;
     }
     setEmail(auth.user.email ?? "");
-    const [entitlement, trading] = await Promise.all([
+    const [entitlement, trading, settings] = await Promise.all([
       supabase.from("app_access_entitlements").select("enabled").eq("user_id", auth.user.id).maybeSingle(),
-      supabase.from("trading_accounts").select("status,broker_server,login,balance,equity,last_heartbeat,open_trades,pending_orders,ea_state,ea_version").eq("user_id", auth.user.id).maybeSingle(),
+      supabase.from("trading_accounts").select("status,broker_server,login,balance,equity,account_currency,last_heartbeat,open_trades,pending_orders,ea_state,ea_version").eq("user_id", auth.user.id).maybeSingle(),
+      supabase.from("robot_settings").select("break_even_enabled,break_even_trigger").eq("user_id", auth.user.id).maybeSingle(),
     ]);
     if (entitlement.error) throw entitlement.error;
     if (trading.error) throw trading.error;
     setAccess(entitlement.data?.enabled === true);
     setAccount(trading.data as Account | null);
+    setRobotSettings(settings.data as { break_even_enabled: boolean; break_even_trigger: number } | null);
+    if (settings.data?.break_even_trigger != null) setBreakEvenDraft(String(settings.data.break_even_trigger));
     setUpdatedAt(new Date());
     setError("");
   }, []);
@@ -194,12 +205,45 @@ export default function HomeScreen() {
           {account ? <>
             <Text style={styles.description}>{account.broker_server || "Broker not reported"} · Login {account.login || "—"}</Text>
             <View style={styles.metrics}>
-              <View style={styles.metric}><Text style={styles.fieldLabel}>BALANCE</Text><Text style={styles.metricValue}>{money(account.balance)}</Text></View>
-              <View style={styles.metric}><Text style={styles.fieldLabel}>EQUITY</Text><Text style={styles.metricValue}>{money(account.equity)}</Text></View>
+              <View style={styles.metric}><Text style={styles.fieldLabel}>BALANCE</Text><Text style={styles.metricValue}>{money(account.balance, account.account_currency)}</Text></View>
+              <View style={styles.metric}><Text style={styles.fieldLabel}>EQUITY</Text><Text style={styles.metricValue}>{money(account.equity, account.account_currency)}</Text></View>
             </View>
+            <Text style={styles.description}>Account currency: {account.account_currency || "Waiting for MT5 currency data"}</Text>
             <Text style={styles.description}>EA state: {account.ea_state || "Not reported"} · Version: {account.ea_version || "—"}</Text>
             <Text style={styles.description}>Last EA heartbeat: {account.last_heartbeat ? new Date(account.last_heartbeat).toLocaleString() : "Not received"}</Text>
           </> : <Text style={styles.description}>No MT5 account has been linked to this user yet. Account details will appear after the EA connects.</Text>}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>BREAK-EVEN PROTECTION</Text>
+          <Text style={styles.description}>When combined floating profit across all open positions reaches your target, a compatible EA can move eligible stop-losses to entry.</Text>
+          <View style={styles.breakEvenRow}>
+            <Text style={styles.controlsTitle}>Automatic break-even</Text>
+            <Pressable accessibilityRole="switch" accessibilityState={{ checked: robotSettings?.break_even_enabled === true }} onPress={async () => {
+              if (!robotSettings || savingBreakEven) return;
+              const amount = Number(breakEvenDraft);
+              if (!Number.isFinite(amount) || amount <= 0) { setError("Enter a profit target greater than zero."); return; }
+              setSavingBreakEven(true);
+              const { data: auth } = await supabase.auth.getUser();
+              const result = auth.user ? await supabase.from("robot_settings").update({ break_even_enabled: !robotSettings.break_even_enabled, break_even_trigger: amount, updated_at: new Date().toISOString() }).eq("user_id", auth.user.id) : { error: new Error("Please sign in again.") };
+              if (result.error) setError(result.error.message); else setRobotSettings({ break_even_enabled: !robotSettings.break_even_enabled, break_even_trigger: amount });
+              setSavingBreakEven(false);
+            }} style={[styles.breakEvenToggle, robotSettings?.break_even_enabled ? styles.breakEvenOn : styles.breakEvenOff]}>
+              <Text style={styles.breakEvenToggleText}>{savingBreakEven ? "…" : robotSettings?.break_even_enabled ? "ON" : "OFF"}</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.fieldLabel}>Combined floating-profit trigger · {account?.account_currency || "account currency"}</Text>
+          <TextInput value={breakEvenDraft} onChangeText={setBreakEvenDraft} keyboardType="decimal-pad" style={styles.breakEvenInput} placeholder="10.00" placeholderTextColor={palette.muted} />
+          <Pressable disabled={!robotSettings || savingBreakEven} onPress={async () => {
+            const amount = Number(breakEvenDraft);
+            if (!Number.isFinite(amount) || amount <= 0) { setError("Enter a profit target greater than zero."); return; }
+            setSavingBreakEven(true);
+            const { data: auth } = await supabase.auth.getUser();
+            const result = auth.user ? await supabase.from("robot_settings").update({ break_even_trigger: amount, updated_at: new Date().toISOString() }).eq("user_id", auth.user.id) : { error: new Error("Please sign in again.") };
+            if (result.error) setError(result.error.message); else setRobotSettings({ ...(robotSettings as { break_even_enabled: boolean; break_even_trigger: number }), break_even_trigger: amount });
+            setSavingBreakEven(false);
+          }} style={styles.breakEvenSave}><Text style={styles.breakEvenSaveText}>SAVE TARGET</Text></Pressable>
+          <Text style={styles.description}>This saves the setting. Automatic stop-loss changes need a compatible EA update.</Text>
         </View>
 
         <View style={styles.card}>
@@ -261,6 +305,14 @@ const styles = StyleSheet.create({
   metric: { flex: 1, backgroundColor: palette.background, borderRadius: 12, padding: 12 },
   metricValue: { color: palette.text, fontSize: 17, fontWeight: "800", marginTop: 7 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  breakEvenRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, marginBottom: 14 },
+  breakEvenToggle: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 18, paddingVertical: 9 },
+  breakEvenOn: { borderColor: palette.green, backgroundColor: "#0D302A" },
+  breakEvenOff: { borderColor: palette.borderStrong, backgroundColor: palette.surfaceRaised },
+  breakEvenToggleText: { color: palette.text, fontSize: 11, fontWeight: "900" },
+  breakEvenInput: { borderWidth: 1, borderColor: palette.border, borderRadius: 10, padding: 12, color: palette.text, marginTop: 7, backgroundColor: palette.background },
+  breakEvenSave: { alignItems: "center", padding: 12, borderRadius: 10, backgroundColor: palette.surfaceBlue, marginTop: 9 },
+  breakEvenSaveText: { color: palette.blueBright, fontSize: 11, fontWeight: "900", letterSpacing: 1 },
   count: { color: palette.blueBright, fontSize: 12, fontWeight: "800" },
   muted: { color: palette.muted, fontSize: 13 },
   tradeRow: { borderTopWidth: 1, borderTopColor: palette.border, marginTop: 12, paddingTop: 12, gap: 9 },
