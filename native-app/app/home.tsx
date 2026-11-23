@@ -86,6 +86,7 @@ export default function HomeScreen() {
   const [savingBreakEven, setSavingBreakEven] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState("ZAR");
   const [conversionRate, setConversionRate] = useState<number | null>(1);
+  const [accountDetailsExpanded, setAccountDetailsExpanded] = useState(false);
 
   useEffect(() => {
     void SecureStore.getItemAsync("mopsentry-display-currency").then(value => {
@@ -202,21 +203,41 @@ export default function HomeScreen() {
         </View>
 
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>ACCOUNT</Text>
-          <Text style={styles.email}>{email || "Signed in"}</Text>
-          {account ? <>
-            <Text style={styles.description}>{account.broker_server || "Broker not reported"} · Login {account.login || "—"}</Text>
-            <View style={styles.metrics}>
-              <View style={styles.metric}><Text style={styles.fieldLabel}>BALANCE</Text><Text style={styles.metricValue}>{displayMoney(account.balance)}</Text></View>
-              <View style={styles.metric}><Text style={styles.fieldLabel}>EQUITY</Text><Text style={styles.metricValue}>{displayMoney(account.equity)}</Text></View>
+        <View style={[styles.card, { padding: 0, overflow: "hidden" }]}>
+          <View style={{ padding: 16, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>ACCOUNT EQUITY</Text>
+            <Text style={{ color: palette.text, fontSize: 29, fontWeight: "900", marginTop: 7 }}>{connected ? displayMoney(account?.equity ?? account?.balance ?? null) : "—"}</Text>
+            <Text style={{ color: (Number(account?.equity ?? 0) - Number(account?.balance ?? 0)) >= 0 ? palette.green : palette.red, fontSize: 12, fontWeight: "800", marginTop: 5 }}> {connected ? `${(Number(account?.equity ?? 0) - Number(account?.balance ?? 0)) >= 0 ? "+" : ""}${displayMoney(Number(account?.equity ?? 0) - Number(account?.balance ?? 0))} floating P/L` : "Waiting for live account data"}</Text>
+            <View style={{ flexDirection: "row", gap: 9, marginTop: 14 }}>
+              <View style={[styles.metric, { padding: 10 }]}><Text style={styles.fieldLabel}>BALANCE</Text><Text style={styles.metricValue}>{connected ? displayMoney(account?.balance ?? null) : "—"}</Text></View>
+              <View style={[styles.metric, { padding: 10 }]}><Text style={styles.fieldLabel}>OPEN POSITIONS</Text><Text style={styles.metricValue}>{connected ? records(account?.open_trades).length : "—"}</Text></View>
             </View>
-            <Text style={styles.description}>MT5 account currency: {account.account_currency || "Waiting for MT5 currency data"}</Text>
-            <Text style={styles.description}>{!account.account_currency ? "Waiting for MT5 to report account currency." : account.account_currency === displayCurrency ? `Source currency ${account.account_currency} · no conversion needed.` : conversionRate == null ? `Showing original ${account.account_currency} values until an exchange rate is available.` : `Approx. converted from ${account.account_currency} · rate ${conversionRate.toFixed(4)}.`}</Text>
-            <Text style={styles.description}>EA state: {account.ea_state || "Not reported"} · Version: {account.ea_version || "—"}</Text>
-            <Text style={styles.description}>Last EA heartbeat: {account.last_heartbeat ? new Date(account.last_heartbeat).toLocaleString() : "Not received"}</Text>
-          </> : <Text style={styles.description}>No MT5 account has been linked to this user yet. Account details will appear after the EA connects.</Text>}
+          </View>
+          <View style={{ borderTopWidth: 1, borderTopColor: palette.border, paddingHorizontal: 16, paddingVertical: 12 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}><Text style={styles.controlsTitle}>TRADE</Text><Text style={styles.fieldLabel}>{connected ? `${records(account?.open_trades).length} OPEN` : "WAITING FOR MT5"}</Text></View>
+            {connected && records(account?.open_trades).length > 0 ? records(account?.open_trades).map((trade, index) => {
+              const side = String(trade.side ?? trade.type ?? "BUY").toUpperCase();
+              const pnl = Number(trade.profit ?? trade.pnl ?? 0);
+              return <View key={String(trade.ticket ?? index)} style={{ borderTopWidth: 1, borderTopColor: palette.border, paddingVertical: 11, gap: 7 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><View><Text style={{ color: palette.text, fontWeight: "900", fontSize: 13 }}>{String(trade.symbol ?? trade.pair ?? "—")}</Text><Text style={{ color: side.includes("SELL") ? palette.red : palette.green, fontSize: 9, fontWeight: "900", marginTop: 3 }}>{side}</Text></View><Text style={{ color: pnl >= 0 ? palette.green : palette.red, fontWeight: "900", fontSize: 13 }}>{displayMoney(pnl)}</Text></View>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 7 }}>
+                  {[[ "VOLUME", Number(trade.lots ?? trade.volume ?? 0).toFixed(2) ],[ "OPEN", String(trade.open_price ?? trade.open ?? "—") ],[ "CURRENT", String(trade.current_price ?? trade.current ?? "—") ],[ "S/L", String(trade.sl ?? trade.stop_loss ?? "—") ],[ "T/P", String(trade.tp ?? trade.take_profit ?? "—") ]].map(([label, value]) => <View key={label} style={{ minWidth: "28%" }}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.fieldValue}>{value}</Text></View>)}
+                </View>
+              </View>;
+            }) : <Text style={styles.description}>{connected ? "No open positions on this account." : "Live trade details will appear here when MT5 reconnects."}</Text>}
+          </View>
         </View>
+        <Pressable onPress={() => setAccountDetailsExpanded(value => !value)} style={[styles.settingsLink, { paddingVertical: 12 }]}>
+          <View style={{ flex: 1 }}><Text style={styles.controlsTitle}>Trade account connected</Text><Text style={styles.description}>{connected ? `${account?.broker_server || "MT5"} · Login ${account?.login || "—"}` : "Connection details and account status"}</Text></View><Text style={styles.controlsArrow}>{accountDetailsExpanded ? "−" : "+"}</Text>
+        </Pressable>
+        {accountDetailsExpanded ? <View style={[styles.card, { marginTop: -5 }]}>
+          <Text style={styles.email}>{email || "Signed in"}</Text>
+          <Text style={styles.description}>Broker: {account?.broker_server || "Not reported"} · Login: {account?.login || "—"}</Text>
+          <Text style={styles.description}>MT5 currency: {account?.account_currency || "Waiting for MT5 currency data"}</Text>
+          <Text style={styles.description}>{!account?.account_currency ? "Waiting for MT5 to report account currency." : account.account_currency === displayCurrency ? `Source currency ${account.account_currency} · no conversion needed.` : conversionRate == null ? `Showing original ${account.account_currency} values until an exchange rate is available.` : `Approx. converted from ${account.account_currency} · rate ${conversionRate.toFixed(4)}.`}</Text>
+          <Text style={styles.description}>EA state: {account?.ea_state || "Not reported"} · Version: {account?.ea_version || "—"}</Text>
+          <Text style={styles.description}>Last EA heartbeat: {account?.last_heartbeat ? new Date(account.last_heartbeat).toLocaleString() : "Not received"}</Text>
+        </View> : null}
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>BREAK-EVEN PROTECTION</Text>
