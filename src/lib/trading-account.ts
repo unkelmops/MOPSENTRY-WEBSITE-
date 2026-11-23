@@ -50,8 +50,8 @@ function randomHex(byteLength: number) {
 }
 
 export function generateConnectionKey() {
-  // 128 bits of cryptographically secure randomness, grouped for readability.
-  return `MSE-${randomHex(4)}-${randomHex(4)}-${randomHex(4)}-${randomHex(4)}`;
+  // 80 bits of cryptographically secure randomness in a compact 20-character key.
+  return randomHex(10);
 }
 
 export async function regenerateConnectionKey() {
