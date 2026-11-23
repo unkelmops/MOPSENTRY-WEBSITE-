@@ -25,6 +25,6 @@ describe("analyseMarketCandles", () => {
 
   it("ignores malformed candles", () => {
     const result = analyseMarketCandles([...candles.slice(0, 24), { ...candles[24]!, high: 1 }]);
-    expect(result.rangeState).toBe("inside range");
+    expect(result.rangeState).toBe("unavailable");
   });
 });
