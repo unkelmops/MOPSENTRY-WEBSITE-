@@ -125,7 +125,7 @@ function Dashboard() {
   }, [accountCurrency, displayCurrency]);
   const displayMoney = (value: number | null) => {
     if (value == null) return "—";
-    if (!accountCurrency) return money(value, null);
+    if (!accountCurrency) return money(value, displayCurrency);
     if (conversionRate == null) return money(value, accountCurrency);
     return money(value * conversionRate, displayCurrency);
   };
