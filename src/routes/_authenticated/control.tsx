@@ -51,10 +51,26 @@ function Control() {
   const { data: account } = useQuery(tradingAccountQuery);
   const [s, setS] = useState<RobotSettings>(data);
   const save = useMutation({
-    mutationFn: (patch: Partial<RobotSettings>) => saveRobotSettings(patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey }),
+    mutationFn: async (patch: Partial<RobotSettings>) => {
+      await saveRobotSettings(patch);
+      return patch;
+    },
+    onSuccess: (patch) => {
+      setSavedSettings((current) => ({ ...current, ...patch }));
+      void qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
+  const [savedSettings, setSavedSettings] = useState<RobotSettings>(data);
+  const settingsDirty =
+    s.strategy !== savedSettings.strategy ||
+    s.timeframe !== savedSettings.timeframe ||
+    s.scalper_frequency !== savedSettings.scalper_frequency ||
+    Number(s.lot_size) !== Number(savedSettings.lot_size) ||
+    Number(s.risk_percent) !== Number(savedSettings.risk_percent) ||
+    s.max_trades !== savedSettings.max_trades ||
+    s.alerts_enabled !== savedSettings.alerts_enabled ||
+    JSON.stringify(s.pairs) !== JSON.stringify(savedSettings.pairs);
 
   const heartbeatAt = account?.last_heartbeat ? new Date(account.last_heartbeat).getTime() : 0;
   const connectionReady = account?.status === "connected" && Number.isFinite(heartbeatAt) && Date.now() - heartbeatAt >= 0 && Date.now() - heartbeatAt < 30_000;
@@ -63,6 +79,10 @@ function Control() {
 
   const toggleRun = () => {
     const next = !s.is_running;
+    if (next && settingsDirty) {
+      toast.error("Save your settings first, then press Start.");
+      return;
+    }
     setS({ ...s, is_running: next });
     if (next) igniteApp();
     save.mutate({ is_running: next }, { onSuccess: () => toast.success(next ? "Robot started" : "Robot stopped") });
@@ -74,7 +94,7 @@ function Control() {
     <div className="space-y-5">
       <button
         onClick={toggleRun}
-        disabled={save.isPending || (!s.is_running && (accessLoading || !canStart))}
+        disabled={save.isPending || (!s.is_running && (settingsDirty || accessLoading || !canStart))}
         title={s.is_running ? "Stop MOPSENTRY" : hasAppAccess !== true ? "App Access is required to start." : !connectionReady ? "A fresh MT5/EA connection is required to start." : "Start MOPSENTRY"}
         className={cn(
           "flex w-full items-center justify-between rounded-2xl border p-5 transition-colors",
@@ -88,7 +108,7 @@ function Control() {
         <Power className="h-10 w-10" />
       </button>
       <p className="-mt-3 text-xs text-muted-foreground">
-        The EA receives the saved settings at its next check-in. The actual update timing depends on the EA's check-in interval.
+        {settingsDirty ? "You have unsaved changes. Save settings before starting." : "Settings are saved. Press Start when you're ready."} The EA receives saved settings at its next check-in.
       </p>
       {!s.is_running && hasAppAccess !== true && !accessLoading && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-muted-foreground">
@@ -194,15 +214,15 @@ function Control() {
       <Button
         size="lg"
         className="w-full"
-        disabled={save.isPending}
+        disabled={save.isPending || !settingsDirty}
         onClick={() =>
           save.mutate(
             { strategy: s.strategy, timeframe: s.timeframe, scalper_frequency: s.scalper_frequency, lot_size: s.lot_size, risk_percent: s.risk_percent, max_trades: s.max_trades, pairs: s.pairs, alerts_enabled: s.alerts_enabled },
-            { onSuccess: () => toast.success("Settings saved") },
+            { onSuccess: () => toast.success("Settings saved. You can now press Start.") },
           )
         }
       >
-        {save.isPending ? "Saving…" : "Save settings"}
+        {save.isPending ? "Saving…" : settingsDirty ? "Save settings" : "Settings saved"}
       </Button>
     </div>
   );
@@ -210,12 +230,15 @@ function Control() {
 
 function Section({ title, value, children }: { title: string; value?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
-      <div className="mb-3 flex justify-between text-sm">
+    <details className="group rounded-xl border bg-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm [&::-webkit-details-marker]:hidden">
         <span className="font-medium">{title}</span>
-        {value && <span className="num text-primary">{value}</span>}
-      </div>
-      {children}
-    </div>
+        <span className="flex items-center gap-2 text-muted-foreground">
+          {value && <span className="num text-primary">{value}</span>}
+          <span className="text-xs transition-transform group-open:rotate-180">⌄</span>
+        </span>
+      </summary>
+      <div className="border-t px-4 pb-4 pt-3">{children}</div>
+    </details>
   );
 }
