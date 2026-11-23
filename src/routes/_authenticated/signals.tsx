@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/signals")({
   component: Signals,
 });
 
-type LiveTrade = { ticket?: number; symbol: string; side: string; lots: number; open_price: number; current_price?: number };
+type LiveTrade = { ticket?: number; symbol: string; side: string; lots: number; open_price: number; current_price?: number; profit?: number; sl?: number; tp?: number };
 type PendingOrder = { ticket: number; symbol: string; type: string; volume: number; entry_price: number; sl?: number; tp?: number; expiration?: string };
 
 function formatSast(value: string) {
@@ -352,29 +352,63 @@ function Signals() {
       {activeTab === "news" && <FundamentalEvents />}
 
       {activeTab === "trades" && (
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-semibold"><Radio className="h-4 w-4 text-primary" />Live trades</h2>
-            <span className="text-xs text-muted-foreground">{live.length} open</span>
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">Trade</h2>
+              <p className="text-[11px] text-muted-foreground">Account overview · live positions</p>
+            </div>
+            <span className="rounded-md border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">{live.length} positions</span>
           </div>
-          {live.length === 0 ? (
-            <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No open trades right now.</div>
-          ) : live.map((trade, index) => {
-            const buy = trade.side !== "SELL";
-            return (
-              <div key={trade.ticket ?? index} className="rounded-xl border bg-card p-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{trade.symbol} · {buy ? "BUY" : "SELL"}</span>
-                  <span className="font-mono text-xs text-muted-foreground">{trade.lots} lots</span>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                  <div><p className="text-xs text-muted-foreground">Entry</p><span className="font-mono">{trade.open_price ? trade.open_price.toFixed(2) : "—"}</span></div>
-                  <div><p className="text-xs text-muted-foreground">Current</p><span className="font-mono">{trade.current_price ? trade.current_price.toFixed(2) : "—"}</span></div>
-                </div>
-                {buy ? <ArrowUpRight className="sr-only" /> : <ArrowDownRight className="sr-only" />}
+
+          <div className="overflow-hidden rounded-xl border bg-card">
+            <div className="grid grid-cols-2 divide-x divide-border">
+              <div className="p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Balance</p>
+                <p className="mt-1 font-mono text-base font-bold tabular-nums">{ta?.balance == null ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta.account_currency || "ZAR", maximumFractionDigits: 2 }).format(Number(ta.balance))}</p>
               </div>
-            );
-          })}
+              <div className="p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Equity</p>
+                <p className="mt-1 font-mono text-base font-bold tabular-nums">{ta?.equity == null ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta.account_currency || "ZAR", maximumFractionDigits: 2 }).format(Number(ta.equity))}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between border-t bg-muted/30 px-3 py-2 text-xs">
+              <span className="text-muted-foreground">Floating P/L</span>
+              <span className="font-mono font-semibold tabular-nums">{live.some(t => typeof t.profit === "number") ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0)) : "—"}</span>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border bg-card">
+            <div className="grid grid-cols-[1.15fr_.8fr_.9fr_.9fr] gap-2 border-b bg-muted/40 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span>Symbol / type</span><span className="text-right">Volume</span><span className="text-right">Open price</span><span className="text-right">Current</span>
+            </div>
+            {live.length === 0 ? (
+              <div className="p-5 text-center text-sm text-muted-foreground">No open positions right now.</div>
+            ) : live.map((trade, index) => {
+              const buy = trade.side !== "SELL";
+              const profitKnown = typeof trade.profit === "number";
+              return (
+                <div key={trade.ticket ?? index} className="border-b last:border-b-0">
+                  <div className="grid grid-cols-[1.15fr_.8fr_.9fr_.9fr] items-center gap-2 px-3 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold">{trade.symbol}</p>
+                      <span className={`mt-1 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold ${buy ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-400"}`}>
+                        {buy ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}{buy ? "BUY" : "SELL"}
+                      </span>
+                    </div>
+                    <span className="text-right font-mono text-xs tabular-nums">{trade.lots}</span>
+                    <span className="text-right font-mono text-xs tabular-nums">{Number.isFinite(trade.open_price) ? trade.open_price.toFixed(2) : "—"}</span>
+                    <span className="text-right font-mono text-xs tabular-nums">{typeof trade.current_price === "number" ? trade.current_price.toFixed(2) : "—"}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-dashed px-3 py-2 text-[10px] text-muted-foreground">
+                    <span>SL {typeof trade.sl === "number" ? trade.sl.toFixed(2) : "—"} · TP {typeof trade.tp === "number" ? trade.tp.toFixed(2) : "—"}</span>
+                    <span className={`font-mono font-semibold ${profitKnown ? (trade.profit! >= 0 ? "text-emerald-500" : "text-rose-400") : ""}`}>{profitKnown ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(trade.profit!) : "P/L —"}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-muted-foreground">Live account values are read-only snapshots from the connected terminal. Missing fields are shown as — until the EA sends them.</p>
         </section>
       )}
 
