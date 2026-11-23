@@ -181,7 +181,7 @@ export default function HomeScreen() {
     const base = account?.account_currency?.toUpperCase();
     const currency = conversionRate == null ? base : displayCurrency;
     const converted = conversionRate == null ? value : value * conversionRate;
-    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: currency && /^[A-Z]{3}$/.test(currency) ? currency : "ZAR" }).format(converted); }
+    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: currency && /^[A-Z]{3}$/.test(currency) ? currency : "ZAR", currencyDisplay: "code" }).format(converted); }
     catch { return `${converted.toFixed(2)} ${currency || "MT5"}`; }
   };
 
@@ -212,8 +212,6 @@ export default function HomeScreen() {
               <View style={styles.metric}><Text style={styles.fieldLabel}>EQUITY</Text><Text style={styles.metricValue}>{displayMoney(account.equity)}</Text></View>
             </View>
             <Text style={styles.description}>MT5 account currency: {account.account_currency || "Waiting for MT5 currency data"}</Text>
-            <Text style={styles.fieldLabel}>DISPLAY CURRENCY</Text>
-            <View style={styles.currencyRow}>{["ZAR", "USD", "EUR", "GBP"].map(code => <Pressable key={code} onPress={() => setDisplayCurrency(code)} style={[styles.currencyButton, displayCurrency === code && styles.currencyActive]}><Text style={[styles.currencyText, displayCurrency === code && styles.currencyTextActive]}>{code}</Text></Pressable>)}</View>
             <Text style={styles.description}>{!account.account_currency ? "Waiting for MT5 to report account currency." : account.account_currency === displayCurrency ? `Source currency ${account.account_currency} · no conversion needed.` : conversionRate == null ? `Showing original ${account.account_currency} values until an exchange rate is available.` : `Approx. converted from ${account.account_currency} · rate ${conversionRate.toFixed(4)}.`}</Text>
             <Text style={styles.description}>EA state: {account.ea_state || "Not reported"} · Version: {account.ea_version || "—"}</Text>
             <Text style={styles.description}>Last EA heartbeat: {account.last_heartbeat ? new Date(account.last_heartbeat).toLocaleString() : "Not received"}</Text>
