@@ -73,6 +73,7 @@ function Dashboard() {
   const { data: s } = useSuspenseQuery(robotSettingsQuery);
   const { data: ta } = useSuspenseQuery(tradingAccountQuery);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [breakEvenDialogOpen, setBreakEvenDialogOpen] = useState(false);
   const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const [savedBreakEvenTrigger, setSavedBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const [displayCurrency, setDisplayCurrency] = useState("ZAR");
@@ -241,6 +242,334 @@ function Dashboard() {
         <div className="grid grid-cols-3 divide-x divide-[#20364e] border-b border-[#20364e]">{[["BALANCE",displayMoney(balance)],["EQUITY",displayMoney(equity)],["FLOATING P/L",floatingPnl==null?"—":`${floatingPnl>=0?"+":""}${displayMoney(floatingPnl)}`]].map(([label,value],i)=><div key={label} className="px-3 py-3"><p className="text-[10px] uppercase text-slate-400">{label}</p><p className={cn("num mt-1 text-sm font-semibold",i===2&&floatingPnl!=null?(floatingPnl>=0?"text-emerald-400":"text-rose-400"):"text-white")}>{value}</p></div>)}</div>
         <div className="flex items-center justify-between px-4 py-3"><p className="text-xs font-semibold text-white">POSITIONS</p><span className="rounded-full bg-[#18314a] px-2.5 py-1 text-[10px] font-bold text-sky-300">{fresh?rawTrades.length:"—"} OPEN</span></div>
         {fresh&&rawTrades.length>0?<div className="overflow-x-auto px-3 pb-3"><div className="min-w-[650px]"><div className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] gap-2 border-y border-[#20364e] bg-[#0d1d2e] px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-slate-400"><span>Symbol</span><span>Volume</span><span>Price</span><span>Market</span><span>S/L</span><span>T/P</span><span className="text-right">Profit</span></div>{rawTrades.map((trade,index)=>{const side=String(trade["side"]??trade["type"]??"BUY").toUpperCase();const pnl=Number(trade["profit"]??trade["pnl"]??0);return <div key={String(trade["ticket"]??index)} className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] items-center gap-2 border-b border-[#20364e]/70 px-2 py-3 text-[11px] text-slate-200 last:border-0"><span><span className="block font-semibold text-white">{String(trade["symbol"]??trade["pair"]??"—")}</span><span className={cn("text-[9px] font-bold",side.includes("SELL")?"text-rose-400":"text-emerald-400")}>{side}</span></span><span className="num">{Number(trade["lots"]??trade["volume"]??0).toFixed(2)}</span><span className="num">{String(trade["open_price"]??trade["open"]??"—")}</span><span className="num">{String(trade["current_price"]??trade["current"]??"—")}</span><span className="num">{String(trade["sl"]??trade["stop_loss"]??"—")}</span><span className="num">{String(trade["tp"]??trade["take_profit"]??"—")}</span><span className={cn("num text-right font-semibold",pnl>=0?"text-emerald-400":"text-rose-400")}>{displayMoney(pnl)}</span></div>})}</div></div>:<p className="px-4 pb-4 text-xs text-slate-400">{fresh?"No open positions.":"Live positions appear here when MT5 reconnects."}</p>}
+
+        <div className="flex items-center justify-between gap-3 border-t border-[#20364e] px-4 py-3"><span className="text-[10px] text-slate-400">MT5 positions & pending orders</span><Button variant="destructive" size="sm" disabled={disabledClose} onClick={() => setCloseDialogOpen(true)}><Power className="mr-2 h-4 w-4" />Close All Positions</Button></div>
+              <details className="group relative isolate overflow-hidden rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-500/[0.10] via-card to-fuchsia-500/[0.04] shadow-[0_8px_30px_-18px_rgba(167,139,250,0.45)] transition-all duration-300 open:border-violet-400/50 open:shadow-[0_12px_36px_-16px_rgba(167,139,250,0.28)]">
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-300/25 bg-violet-400/10 text-xl text-violet-300 shadow-inner">⌁</span>
+          <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300/80">EXECUTION QUEUE</span><span className="mt-0.5 block font-semibold">Pending orders</span><span className="mt-0.5 block text-xs text-muted-foreground">Orders waiting for activation</span></span>
+          <span className="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1.5 text-xs font-bold tabular-nums text-violet-200">{fresh ? pendingOrders.length : "—"} <span className="font-medium opacity-70">WAITING</span></span>
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-400/10 text-violet-200 transition-transform duration-300 group-open:rotate-180">⌄</span>
+        </summary>
+        <div className="border-t p-4">
+        <div className="space-y-2">
+          {pendingOrders.length === 0 ? (
+            <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+              {fresh ? "No pending orders reported by MT5." : "No fresh pending-order data available."}
+            </div>
+          ) : (
+            pendingOrders.map((order, i) => {
+              const type = String(order["type"] ?? "PENDING").replaceAll("_", " ");
+              const entry = Number(order["entry_price"] ?? 0);
+              const volume = Number(order["volume"] ?? 0);
+              const ticket = String(order["ticket"] ?? i);
+              return (
+                <div key={ticket} className="rounded-xl border bg-card p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{String(order["symbol"] ?? "")}</p>
+                      <p className="num text-xs text-muted-foreground">{type} · {volume} lots · #{ticket}</p>
+                    </div>
+                    <p className="num text-sm font-semibold">@ {entry}</p>
+                  </div>
+                  <p className="num mt-2 text-xs text-muted-foreground">
+                    SL: {order["sl"] == null ? "—" : String(order["sl"])} · TP: {order["tp"] == null ? "—" : String(order["tp"])}
+                    {order["expiration"] ? " · Expires " + String(order["expiration"]) : ""}
+                  </p>
+                </div>
+              );
+            })
+          )}
+        </div>
+        </div>
+      </details>
+      </section>
+
+      <Button variant="outline" className="w-full justify-between rounded-xl border-cyan-400/25 bg-gradient-to-r from-cyan-500/10 to-blue-500/5 py-5" onClick={() => setBreakEvenDialogOpen(true)}><span className="flex items-center gap-2"><span className="text-cyan-300">⌁</span>Break-Even Protection</span><span className={cn("rounded-full px-3 py-1 text-[10px] font-bold",s.break_even_enabled?"bg-emerald-400/15 text-emerald-300":"bg-slate-500/15 text-slate-300")}>{s.break_even_enabled?"ON":"OFF"} · Configure</span></Button>FileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowUpRight,
+  BrainCircuit,
+  Clock3,
+  Link2,
+  Power,
+  RefreshCw,
+  TrendingUp,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import type { Trade } from "@/lib/demo-data";
+import { supabase } from "@/integrations/supabase/client";
+import { robotSettingsQuery } from "@/lib/robot-settings";
+import { tradingAccountQuery } from "@/lib/trading-account";
+import { saveRobotSettings } from "@/lib/robot-settings";
+import { cn } from "@/lib/utils";
+
+
+export const Route = createFileRoute("/_authenticated/dashboard")({
+  head: () => ({ meta: [{ title: "Overview — MOPSENTRY EA" }] }),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(robotSettingsQuery),
+      context.queryClient.ensureQueryData(tradingAccountQuery),
+    ]),
+  pendingComponent: DashboardLoading,
+  component: Dashboard,
+});
+
+function DashboardLoading() {
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-5 pb-24" role="status" aria-live="polite">
+      <div className="flex items-center gap-3 rounded-2xl border bg-card/70 p-4 text-sm text-muted-foreground">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        Connecting to MOPSENTRY and loading your account…
+      </div>
+      <div className="h-24 animate-pulse rounded-2xl border bg-muted/40" />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="h-20 animate-pulse rounded-xl border bg-muted/40" />
+        <div className="h-20 animate-pulse rounded-xl border bg-muted/40" />
+      </div>
+      <div className="h-32 animate-pulse rounded-2xl border bg-muted/40" />
+    </div>
+  );
+}
+
+const money = (n: number, currency: string | null) => {
+  const formatted = n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (!currency || !/^[A-Z]{3}$/.test(currency)) return formatted;
+  try { return new Intl.NumberFormat("en-ZA", { style: "currency", currency, currencyDisplay: "symbol" }).format(n); }
+  catch { return `${formatted} ${currency}`; }
+};
+
+
+
+function Dashboard() {
+  const qc = useQueryClient();
+  const { data: s } = useSuspenseQuery(robotSettingsQuery);
+  const { data: ta } = useSuspenseQuery(tradingAccountQuery);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [breakEvenDialogOpen, setBreakEvenDialogOpen] = useState(false);
+  const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
+  const [savedBreakEvenTrigger, setSavedBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
+  const [displayCurrency, setDisplayCurrency] = useState("ZAR");
+  useEffect(() => { const sync = () => { try { const saved = localStorage.getItem("mopsentry-currency"); if (saved && /^[A-Z]{3}$/.test(saved)) setDisplayCurrency(saved); } catch { /* optional storage */ } }; sync(); window.addEventListener("mopsentry-currency-change", sync); return () => window.removeEventListener("mopsentry-currency-change", sync); }, []);
+  const [conversionRate, setConversionRate] = useState<number | null>(null);
+  const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
+  useEffect(() => {
+    let active = true;
+    const loadRate = async () => {
+      if (!accountCurrency || !/^[A-Z]{3}$/.test(accountCurrency)) { setConversionRate(null); return; }
+      if (accountCurrency === displayCurrency) { setConversionRate(1); return; }
+      setConversionRate(null);
+      try {
+        const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${accountCurrency}&symbols=${displayCurrency}`);
+        if (response.ok) {
+          const data = await response.json();
+          const rate = Number(data?.rates?.[displayCurrency]);
+          if (Number.isFinite(rate) && rate > 0) { if (active) setConversionRate(rate); return; }
+        }
+      } catch { /* fallback below */ }
+      try {
+        const response = await fetch(`https://open.er-api.com/v6/latest/${accountCurrency}`);
+        if (!response.ok) throw new Error("FX provider unavailable");
+        const data = await response.json();
+        const rate = Number(data?.rates?.[displayCurrency]);
+        if (!Number.isFinite(rate) || rate <= 0) throw new Error("FX rate missing");
+        if (active) setConversionRate(rate);
+      } catch { if (active) setConversionRate(null); }
+    };
+    void loadRate();
+    return () => { active = false; };
+  }, [accountCurrency, displayCurrency]);
+  const displayMoney = (value: number | null) => {
+    if (value == null) return "—";
+    if (!accountCurrency) return money(value, displayCurrency);
+    if (conversionRate == null) return money(value, accountCurrency);
+    return money(value * conversionRate, displayCurrency);
+  };
+  const breakEvenSave = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const trigger = Number(breakEvenTrigger);
+      if (!Number.isFinite(trigger) || trigger <= 0) throw new Error("Enter a profit threshold greater than zero.");
+      await saveRobotSettings({ break_even_enabled: enabled, break_even_trigger: trigger });
+    },
+    onSuccess: (_data, enabled) => { if (!enabled) setSavedBreakEvenTrigger(breakEvenTrigger); toast.success("Break-even settings saved."); void qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey }); },
+    onError: (error: Error) => toast.error(error.message || "Could not save break-even settings."),
+  });
+
+  // Supabase realtime makes the screen react to a new EA check-in immediately.
+  // The two-second query polling remains as a fallback.
+  useEffect(() => {
+    let active = true;
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!active || !data.user) return;
+      channel = supabase
+        .channel(`trading-account-${data.user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "trading_accounts",
+            filter: `user_id=eq.${data.user.id}`,
+          },
+          () => {
+            void qc.invalidateQueries({ queryKey: tradingAccountQuery.queryKey });
+          },
+        )
+        .subscribe();
+    });
+
+    return () => {
+      active = false;
+      if (channel) void supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
+  const lastBeat = ta.last_heartbeat ? new Date(ta.last_heartbeat) : null;
+  const heartbeatAge = lastBeat ? Date.now() - lastBeat.getTime() : Number.POSITIVE_INFINITY;
+  const fresh = Boolean(
+    ta.status === "connected" && ta.balance != null && Number.isFinite(heartbeatAge) && heartbeatAge >= 0 && heartbeatAge < 30_000,
+  );
+  const compatibleEA = fresh && ta.ea_version === "1.73";
+  const balance = fresh ? Number(ta.balance) : null;
+  const equity = fresh ? Number(ta.equity ?? ta.balance) : null;
+  const floatingPnl = balance != null && equity != null ? equity - balance : null;
+  const connectionLabel = fresh ? "MT5 connected" : ta.last_heartbeat ? (heartbeatAge >= 0 && heartbeatAge < 120_000 ? "Connection stale" : "Disconnected") : "Waiting for MT5 data";
+  const rawTrades = (ta.open_trades ?? []) as Array<Record<string, unknown>>;
+  const pendingOrders = fresh ? ((ta.pending_orders ?? []) as Array<Record<string, unknown>>) : [];
+  const trades: Trade[] = fresh
+    ? rawTrades.map((t, i) => ({
+        id: String(t["ticket"] ?? `${String(t["symbol"] ?? "position")}-${i}`),
+        pair: String(t["symbol"] ?? t["pair"] ?? ""),
+        side: t["side"] === "SELL" ? "SELL" : "BUY",
+        lots: Number(t["lots"] ?? t["volume"] ?? 0),
+        open: Number(t["open_price"] ?? t["open"] ?? 0),
+        current: Number(t["current_price"] ?? t["current"] ?? 0),
+        pnl: Number(t["profit"] ?? t["pnl"] ?? 0),
+      }))
+    : [];
+
+  const closeAll = useMutation({
+    mutationFn: async () => {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error("Please sign in again before sending a trading command.");
+      if (!fresh) throw new Error("MT5 connection is not fresh. Reconnect before sending Close All.");
+      if (!compatibleEA) throw new Error("Install and compile MOPSENTRY EA v1.73 first. Older versions cannot receive this app command.");
+      if (rawTrades.length === 0) throw new Error("MT5 reports no open positions.");
+      const { data: existingCommand, error: existingCommandError } = await supabase
+        .from("robot_commands")
+        .select("id")
+        .eq("user_id", auth.user.id)
+        .eq("status", "pending")
+        .limit(1)
+        .maybeSingle();
+      if (existingCommandError) throw existingCommandError;
+      if (existingCommand) throw new Error("A Close All request is already waiting for MT5. Wait for it to be acknowledged before sending another.");
+      const { data, error } = await supabase
+        .from("robot_commands")
+        .insert({ user_id: auth.user.id, command: "CLOSE_ALL", status: "pending" })
+        .select("id, status, created_at")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      setCloseDialogOpen(false);
+      toast.success("Close All request queued. Waiting for the MT5 EA to receive it.");
+      void qc.invalidateQueries({ queryKey: tradingAccountQuery.queryKey });
+    },
+    onError: (error: Error) => toast.error(error.message || "Could not queue Close All request."),
+  });
+
+  const disabledClose = !fresh || !compatibleEA || rawTrades.length === 0 || closeAll.isPending;
+
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-4 pb-24">
+      <div className={cn("flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5", fresh ? "border-primary/30 bg-primary/5" : "border-border bg-card/70")}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", fresh ? "bg-profit animate-pulse-dot" : "bg-muted-foreground")} />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold">{fresh ? "Trade account connected" : connectionLabel}</p>
+            <p className="text-[11px] text-muted-foreground">Robot {s.is_running ? "running" : "stopped"}{lastBeat ? ` · Updated ${lastBeat.toLocaleTimeString()}` : ""}</p>
+          </div>
+        </div>
+        {!fresh && <Link to="/account" className="shrink-0 text-xs font-semibold text-primary hover:underline">Connect MT5</Link>}
+      </div>
+
+      {!fresh && (
+        <Link
+          to="/account"
+          className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 p-4 text-sm"
+        >
+          <Link2 className="h-5 w-5 shrink-0 text-primary" />
+          <span>
+            <span className="font-semibold text-primary">Connect your trading account</span>
+            <span className="block text-muted-foreground">
+              Connect MT5 to begin receiving real account data. No sample account numbers are shown.
+            </span>
+          </span>
+        </Link>
+      )}<section className="relative isolate overflow-hidden rounded-2xl border border-sky-400/30 bg-gradient-to-br from-[#071321] via-[#0b1c30] to-[#10172d] shadow-[0_18px_55px_-28px_rgba(14,165,233,.65)]">
+        <div className="flex items-center justify-between border-b border-sky-300/15 bg-gradient-to-r from-sky-400/10 via-transparent to-violet-400/10 px-4 py-3"><div><p className="text-sm font-bold tracking-[0.18em] text-white">TRADE</p><p className="text-[10px] uppercase tracking-wider text-slate-400">MOPSENTRY · MT5 TERMINAL</p></div><span className={cn("rounded-md px-2 py-1 text-[10px] font-bold tracking-wider",fresh?"bg-emerald-400/10 text-emerald-400":"bg-slate-500/15 text-slate-400")}>{fresh?"CONNECTED":"OFFLINE"}</span></div>
+        <div className="grid grid-cols-3 divide-x divide-[#20364e] border-b border-[#20364e]">{[["BALANCE",displayMoney(balance)],["EQUITY",displayMoney(equity)],["FLOATING P/L",floatingPnl==null?"—":`${floatingPnl>=0?"+":""}${displayMoney(floatingPnl)}`]].map(([label,value],i)=><div key={label} className="px-3 py-3"><p className="text-[10px] uppercase text-slate-400">{label}</p><p className={cn("num mt-1 text-sm font-semibold",i===2&&floatingPnl!=null?(floatingPnl>=0?"text-emerald-400":"text-rose-400"):"text-white")}>{value}</p></div>)}</div>
+        <div className="flex items-center justify-between px-4 py-3"><p className="text-xs font-semibold text-white">POSITIONS</p><span className="rounded-full bg-[#18314a] px-2.5 py-1 text-[10px] font-bold text-sky-300">{fresh?rawTrades.length:"—"} OPEN</span></div>
+        {fresh&&rawTrades.length>0?<div className="overflow-x-auto px-3 pb-3"><div className="min-w-[650px]"><div className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] gap-2 border-y border-[#20364e] bg-[#0d1d2e] px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-slate-400"><span>Symbol</span><span>Volume</span><span>Price</span><span>Market</span><span>S/L</span><span>T/P</span><span className="text-right">Profit</span></div>{rawTrades.map((trade,index)=>{const side=String(trade["side"]??trade["type"]??"BUY").toUpperCase();const pnl=Number(trade["profit"]??trade["pnl"]??0);return <div key={String(trade["ticket"]??index)} className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] items-center gap-2 border-b border-[#20364e]/70 px-2 py-3 text-[11px] text-slate-200 last:border-0"><span><span className="block font-semibold text-white">{String(trade["symbol"]??trade["pair"]??"—")}</span><span className={cn("text-[9px] font-bold",side.includes("SELL")?"text-rose-400":"text-emerald-400")}>{side}</span></span><span className="num">{Number(trade["lots"]??trade["volume"]??0).toFixed(2)}</span><span className="num">{String(trade["open_price"]??trade["open"]??"—")}</span><span className="num">{String(trade["current_price"]??trade["current"]??"—")}</span><span className="num">{String(trade["sl"]??trade["stop_loss"]??"—")}</span><span className="num">{String(trade["tp"]??trade["take_profit"]??"—")}</span><span className={cn("num text-right font-semibold",pnl>=0?"text-emerald-400":"text-rose-400")}>{displayMoney(pnl)}</span></div>})}</div></div>:<p className="px-4 pb-4 text-xs text-slate-400">{fresh?"No open positions.":"Live positions appear here when MT5 reconnects."}</p>}
+
+        <div className="flex items-center justify-between gap-3 border-t border-[#20364e] px-4 py-3"><span className="text-[10px] text-slate-400">MT5 positions & pending orders</span><Button variant="destructive" size="sm" disabled={disabledClose} onClick={() => setCloseDialogOpen(true)}><Power className="mr-2 h-4 w-4" />Close All Positions</Button></div>
+              <details className="group relative isolate overflow-hidden rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-500/[0.10] via-card to-fuchsia-500/[0.04] shadow-[0_8px_30px_-18px_rgba(167,139,250,0.45)] transition-all duration-300 open:border-violet-400/50 open:shadow-[0_12px_36px_-16px_rgba(167,139,250,0.28)]">
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-300/25 bg-violet-400/10 text-xl text-violet-300 shadow-inner">⌁</span>
+          <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300/80">EXECUTION QUEUE</span><span className="mt-0.5 block font-semibold">Pending orders</span><span className="mt-0.5 block text-xs text-muted-foreground">Orders waiting for activation</span></span>
+          <span className="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1.5 text-xs font-bold tabular-nums text-violet-200">{fresh ? pendingOrders.length : "—"} <span className="font-medium opacity-70">WAITING</span></span>
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-400/10 text-violet-200 transition-transform duration-300 group-open:rotate-180">⌄</span>
+        </summary>
+        <div className="border-t p-4">
+        <div className="space-y-2">
+          {pendingOrders.length === 0 ? (
+            <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+              {fresh ? "No pending orders reported by MT5." : "No fresh pending-order data available."}
+            </div>
+          ) : (
+            pendingOrders.map((order, i) => {
+              const type = String(order["type"] ?? "PENDING").replaceAll("_", " ");
+              const entry = Number(order["entry_price"] ?? 0);
+              const volume = Number(order["volume"] ?? 0);
+              const ticket = String(order["ticket"] ?? i);
+              return (
+                <div key={ticket} className="rounded-xl border bg-card p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{String(order["symbol"] ?? "")}</p>
+                      <p className="num text-xs text-muted-foreground">{type} · {volume} lots · #{ticket}</p>
+                    </div>
+                    <p className="num text-sm font-semibold">@ {entry}</p>
+                  </div>
+                  <p className="num mt-2 text-xs text-muted-foreground">
+                    SL: {order["sl"] == null ? "—" : String(order["sl"])} · TP: {order["tp"] == null ? "—" : String(order["tp"])}
+                    {order["expiration"] ? " · Expires " + String(order["expiration"]) : ""}
+                  </p>
+                </div>
+              );
+            })
+          )}
+        </div>
+        </div>
+      </details>
       </section>
 
       <details className="group overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-br from-[#0b1c2d] via-card to-card shadow-[0_12px_40px_-24px_rgba(34,211,238,.35)]" aria-label="Break-even protection">
@@ -281,100 +610,19 @@ function Dashboard() {
         </div>
       )}
 
-      <details className="group relative isolate overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-br from-cyan-500/[0.10] via-card to-blue-500/[0.04] shadow-[0_8px_30px_-18px_rgba(34,211,238,0.45)] transition-all duration-300 open:border-cyan-400/50 open:shadow-[0_12px_36px_-16px_rgba(34,211,238,0.28)]">
-        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/25 bg-cyan-400/10 text-xl text-cyan-300 shadow-inner">↗</span>
-          <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">LIVE EXPOSURE</span><span className="mt-0.5 block font-semibold">Open positions</span><span className="mt-0.5 block text-xs text-muted-foreground">Your active market positions</span></span>
-          <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-bold tabular-nums text-cyan-200">{fresh ? rawTrades.length : "—"} <span className="font-medium opacity-70">OPEN</span></span>
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-cyan-400/10 text-cyan-200 transition-transform duration-300 group-open:rotate-180">⌄</span>
-        </summary>
-        <div className="border-t p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="font-semibold">Open positions</h2>
-          <Button variant="destructive" size="sm" disabled={disabledClose} onClick={() => setCloseDialogOpen(true)}>
-            <Power className="mr-2 h-4 w-4" />
-            Close All Positions
-          </Button>
-        </div>
-        <div className="space-y-2">
-          {trades.length === 0 ? (
-            <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-              {fresh ? "No open positions reported by MT5." : "No fresh position data available."}
-            </div>
-          ) : (
-            trades.map((t) => (
-              <div key={t.id} className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 sm:flex-nowrap">
-                <div className="min-w-0">
-                  <p className="font-semibold">{t.pair}</p>
-                  <p className="num text-xs text-muted-foreground">
-                    <span className={t.side === "BUY" ? "text-profit" : "text-loss"}>{t.side}</span> {t.lots} lots @ {t.open}
-                  </p>
-                </div>
-                <p className={cn("num shrink-0 font-semibold", t.pnl >= 0 ? "text-profit" : "text-loss")}>
-                  {t.pnl >= 0 ? "+" : ""}{displayMoney(t.pnl)}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-        {fresh && rawTrades.length > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Close All targets positions tagged with MOPSENTRY's magic number across symbols. Manually opened trades are not closed by this command.
-          </p>
-        )}
-        </div>
-      </details>
 
-      <details className="group relative isolate overflow-hidden rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-500/[0.10] via-card to-fuchsia-500/[0.04] shadow-[0_8px_30px_-18px_rgba(167,139,250,0.45)] transition-all duration-300 open:border-violet-400/50 open:shadow-[0_12px_36px_-16px_rgba(167,139,250,0.28)]">
-        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-300/25 bg-violet-400/10 text-xl text-violet-300 shadow-inner">⌁</span>
-          <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300/80">EXECUTION QUEUE</span><span className="mt-0.5 block font-semibold">Pending orders</span><span className="mt-0.5 block text-xs text-muted-foreground">Orders waiting for activation</span></span>
-          <span className="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1.5 text-xs font-bold tabular-nums text-violet-200">{fresh ? pendingOrders.length : "—"} <span className="font-medium opacity-70">WAITING</span></span>
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-400/10 text-violet-200 transition-transform duration-300 group-open:rotate-180">⌄</span>
-        </summary>
-        <div className="border-t p-4">
-        <div className="space-y-2">
-          {pendingOrders.length === 0 ? (
-            <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-              {fresh ? "No pending orders reported by MT5." : "No fresh pending-order data available."}
-            </div>
-          ) : (
-            pendingOrders.map((order, i) => {
-              const type = String(order["type"] ?? "PENDING").replaceAll("_", " ");
-              const entry = Number(order["entry_price"] ?? 0);
-              const volume = Number(order["volume"] ?? 0);
-              const ticket = String(order["ticket"] ?? i);
-              return (
-                <div key={ticket} className="rounded-xl border bg-card p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{String(order["symbol"] ?? "")}</p>
-                      <p className="num text-xs text-muted-foreground">{type} · {volume} lots · #{ticket}</p>
-                    </div>
-                    <p className="num text-sm font-semibold">@ {entry}</p>
-                  </div>
-                  <p className="num mt-2 text-xs text-muted-foreground">
-                    SL: {order["sl"] == null ? "—" : String(order["sl"])} · TP: {order["tp"] == null ? "—" : String(order["tp"])}
-                    {order["expiration"] ? " · Expires " + String(order["expiration"]) : ""}
-                  </p>
-                </div>
-              );
-            })
-          )}
-        </div>
-        </div>
-      </details>
 
-      <Button
-        className="fixed bottom-[86px] left-5 z-40 rounded-full px-5 shadow-xl"
-        variant="destructive"
-        disabled={disabledClose}
-        onClick={() => setCloseDialogOpen(true)}
-        aria-label="Close all MOPSENTRY positions"
-      >
-        <Power className="mr-2 h-4 w-4" />
-        Close All
-      </Button>
+
+
+
+
+      <AlertDialog open={breakEvenDialogOpen} onOpenChange={setBreakEvenDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Break-Even Protection</AlertDialogTitle><AlertDialogDescription>Set your profit target and choose whether protection is on or off.</AlertDialogDescription></AlertDialogHeader>
+          <label className="text-sm text-muted-foreground">Profit target · {accountCurrency ?? "account currency"}<input type="number" min="0.01" step="0.01" value={breakEvenTrigger} onChange={(event) => setBreakEvenTrigger(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground" /></label>
+          <AlertDialogFooter><AlertDialogCancel disabled={breakEvenSave.isPending}>Cancel</AlertDialogCancel><Button disabled={breakEvenSave.isPending || !Number.isFinite(Number(breakEvenTrigger)) || Number(breakEvenTrigger)<=0} onClick={async()=>{await breakEvenSave.mutateAsync(!s.break_even_enabled);setBreakEvenDialogOpen(false);}}>{breakEvenSave.isPending?"Saving…":s.break_even_enabled?"Save & Turn Off":"Save & Turn On"}</Button></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
         <AlertDialogContent>
