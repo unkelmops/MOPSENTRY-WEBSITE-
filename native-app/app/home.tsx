@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
@@ -36,7 +37,7 @@ function displayValue(value: unknown): string {
 function money(value: number | null, currency: string | null) {
   if (value === null) return "—";
   if (currency && /^[A-Z]{3}$/.test(currency)) {
-    try { return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(value); } catch { /* use plain amount below */ }
+    try { return new Intl.NumberFormat(undefined, { style: "currency", currency, currencyDisplay: "code" }).format(value); } catch { /* use plain amount below */ }
   }
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -191,7 +192,7 @@ export default function HomeScreen() {
             <Image source={{ uri: "mopsentryLogo" }} resizeMode="contain" style={styles.brandLogo} accessibilityLabel="MOPSENTRY" />
             <Text style={styles.title}>Overview</Text>
           </View>
-          <View style={[styles.statusPill, connected ? styles.connected : styles.disconnected]}><View style={[styles.dot, connected ? styles.dotOn : styles.dotOff]} /><Text style={styles.statusText}>{connected ? "MT5 CONNECTED" : "NOT CONNECTED"}</Text></View>
+          <View style={styles.headerActions}><View style={[styles.statusPill, connected ? styles.connected : styles.disconnected]}><View style={[styles.dot, connected ? styles.dotOn : styles.dotOff]} /><Text style={styles.statusText}>{connected ? "MT5 CONNECTED" : "NOT CONNECTED"}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={() => router.push("/settings")} style={styles.moreButton}><Text style={styles.moreGlyph}>⋮</Text></Pressable></View>
         </View>
 
 
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.background },
   content: { padding: 22, paddingBottom: 40 },
   loading: { flex: 1, backgroundColor: palette.background, alignItems: "center", justifyContent: "center", gap: 14 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14, marginBottom: 24, gap: 10 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14, marginBottom: 24, gap: 10 },\n  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },\n  moreButton: { width: 34, height: 34, borderRadius: 11, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surface, alignItems: "center", justifyContent: "center" },\n  moreGlyph: { color: palette.text, fontSize: 23, lineHeight: 25, fontWeight: "900" },
   headerBrand: { flex: 1, alignItems: "flex-start", gap: 5 },
   brandLogo: { width: 148, height: 36 },
   eyebrow: { color: palette.blueBright, fontSize: 10, letterSpacing: 2, fontWeight: "800" },
