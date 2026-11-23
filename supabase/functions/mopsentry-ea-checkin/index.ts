@@ -71,6 +71,8 @@ Deno.serve(async (req: Request) => {
   try { body = await req.json(); } catch { return json({ ok: false, error: "bad_json" }, 400); }
   const balance = finite(body?.balance);
   const equity = finite(body?.equity);
+  const accountCurrency = typeof body?.account_currency === "string" && /^[A-Za-z]{3}$/.test(body.account_currency)
+    ? body.account_currency.toUpperCase() : null;
   if (typeof body?.key !== "string" || body.key.length < 12 || body.key.length > 80 ||
       balance === null || equity === null) {
     return json({ ok: false, error: "bad_input" }, 400);
@@ -91,6 +93,7 @@ Deno.serve(async (req: Request) => {
   const { error: updateError } = await supabase.from("trading_accounts").update({
     balance,
     equity,
+    ...(accountCurrency ? { account_currency: accountCurrency } : {}),
     status: "connected",
     last_heartbeat: now,
     updated_at: now,
@@ -123,7 +126,7 @@ Deno.serve(async (req: Request) => {
   if (commandError) return json({ ok: false, error: "command_lookup_failed" }, 500);
 
   const { data: settings, error: settingsError } = await supabase.from("robot_settings")
-    .select("is_running,strategy,timeframe,scalper_frequency,lot_size,risk_percent,max_trades,pairs,alerts_enabled")
+    .select("is_running,strategy,timeframe,scalper_frequency,lot_size,risk_percent,max_trades,pairs,alerts_enabled,break_even_enabled,break_even_trigger")
     .eq("user_id", account.user_id).maybeSingle();
   if (settingsError) return json({ ok: false, error: "settings_lookup_failed" }, 500);
 
@@ -137,6 +140,8 @@ Deno.serve(async (req: Request) => {
     max_trades: settings?.max_trades ?? 5,
     pairs: Array.isArray(settings?.pairs) ? settings.pairs : ["XAUUSD"],
     alerts_enabled: settings?.alerts_enabled ?? true,
+    break_even_enabled: settings?.break_even_enabled ?? false,
+    break_even_trigger: settings?.break_even_trigger ?? 10.00,
   };
 
   return json({
@@ -151,6 +156,8 @@ Deno.serve(async (req: Request) => {
     max_trades: settingsPayload.max_trades,
     pairs: settingsPayload.pairs,
     alerts_enabled: settingsPayload.alerts_enabled,
+    break_even_enabled: settingsPayload.break_even_enabled,
+    break_even_trigger: settingsPayload.break_even_trigger,
     // Structured settings contract for updated EA builds.
     settings: settingsPayload,
     pending_command_id: command?.id ?? "",
