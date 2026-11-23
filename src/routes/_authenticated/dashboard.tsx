@@ -30,7 +30,7 @@ import { robotSettingsQuery } from "@/lib/robot-settings";
 import { tradingAccountQuery } from "@/lib/trading-account";
 import { saveRobotSettings } from "@/lib/robot-settings";
 import { cn } from "@/lib/utils";
-import { loadMarketSnapshot, type MarketQuote, type MarketCandle, type MarketFeedHealth } from "@/lib/market-data";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Overview — MOPSENTRY EA" }] }),
@@ -68,83 +68,6 @@ const money = (n: number, currency: string | null) => {
 };
 
 
-function OverviewMarketPanel() {
-  const [reference, setReference] = useState<MarketQuote | null>(null);
-  const [broker, setBroker] = useState<MarketQuote | null>(null);
-  const [candles, setCandles] = useState<MarketCandle[]>([]);
-  const [health, setHealth] = useState<MarketFeedHealth[]>([]);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    const refresh = async () => {
-      try {
-        const snapshot = await loadMarketSnapshot("XAUUSD", "H1");
-        if (!active) return;
-        setReference(snapshot.quotes.find((quote) => quote.source === "independent") ?? null);
-        setBroker(snapshot.quotes.find((quote) => quote.source === "mt5_broker") ?? null);
-        setCandles(snapshot.candles);
-        setHealth(snapshot.health);
-        setError(Boolean(snapshot.syncError));
-      } catch {
-        if (active) setError(true);
-      }
-    };
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 15_000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, []);
-
-  const referenceHealth = health.find((item) => item.source === "independent");
-  const brokerHealth = health.find((item) => item.source === "mt5_broker");
-  const quoteIsFresh = (quote: MarketQuote | null) => Boolean(quote && Date.now() - new Date(quote.observed_at).getTime() >= 0 && Date.now() - new Date(quote.observed_at).getTime() < 60_000);
-  const brokerConnected = brokerHealth?.status === "healthy" && quoteIsFresh(broker);
-  const closes = candles.slice(-48).map((candle) => candle.close);
-  const low = closes.length ? Math.min(...closes) : 0;
-  const high = closes.length ? Math.max(...closes) : 1;
-  const points = closes.map((value, index) => {
-    const x = closes.length < 2 ? 50 : (index / (closes.length - 1)) * 100;
-    const y = 35 - ((value - low) / Math.max(high - low, 0.000001)) * 30;
-    return `${x},${y}`;
-  }).join(" ");
-  const format = (value: number | null) => value == null ? "—" : new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
-
-  return (
-    <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-card via-card/90 to-primary/10 p-4 shadow-glow sm:p-5" aria-label="Market overview">
-      <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
-      <div className="relative grid gap-4 md:grid-cols-[1.05fr_1fr] md:items-center">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-dot" /> Market pulse · XAUUSD
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">Shared market price</p>
-          <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{format(reference?.last ?? null)}</p>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span>Bid <strong className="num text-foreground">{format(reference?.bid ?? null)}</strong></span>
-            <span>Ask <strong className="num text-foreground">{format(reference?.ask ?? null)}</strong></span>
-            <span className={referenceHealth?.status === "healthy" ? "text-profit" : "text-muted-foreground"}>{referenceHealth?.status === "healthy" ? "Live reference" : referenceHealth?.status?.replace("_", " ") ?? "Waiting for feed"}</span>
-          </div>
-          {brokerConnected && <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-profit/30 bg-profit/10 px-3 py-1.5 text-xs"><span className="h-1.5 w-1.5 rounded-full bg-profit" /> Broker price <strong className="num">{format(broker?.last ?? null)}</strong></div>}
-          {error && <p className="mt-2 text-[11px] text-muted-foreground">Feed refresh issue. Showing the latest verified data available.</p>}
-        </div>
-        <div className="min-w-0">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-muted-foreground">Gold · H1 price action</span>
-            <span className="text-[10px] text-muted-foreground">{candles.length ? `${candles.length} candles` : "Chart waiting"}</span>
-          </div>
-          <div className="h-24 overflow-hidden rounded-xl border border-border/60 bg-background/30 p-2 sm:h-28">
-            {closes.length > 1 ? <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="h-full w-full" role="img" aria-label="Gold hourly reference price trend"><defs><linearGradient id="overviewGoldFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity=".28"/><stop offset="100%" stopColor="var(--primary)" stopOpacity="0"/></linearGradient></defs><polygon points={`0,40 ${points} 100,40`} fill="url(#overviewGoldFill)"/><polyline points={points} fill="none" stroke="var(--primary)" strokeWidth="1.5" vectorEffect="non-scaling-stroke"/></svg> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Waiting for verified candle history</div>}
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <span className="text-[10px] text-muted-foreground">Reference feed · refreshes every 15 sec</span>
-            <Link to="/market-report" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline">Open Market Report <ArrowUpRight className="h-3.5 w-3.5" /></Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function OverviewTradeSetup() {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-report-highlight/30 bg-gradient-to-r from-report-highlight/10 via-card/90 to-card p-4 sm:p-5" aria-label="Trade setup preview">
@@ -169,6 +92,7 @@ function Dashboard() {
   const { data: ta } = useSuspenseQuery(tradingAccountQuery);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
+  const [savedBreakEvenTrigger, setSavedBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
   const breakEvenSave = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -176,7 +100,7 @@ function Dashboard() {
       if (!Number.isFinite(trigger) || trigger <= 0) throw new Error("Enter a profit threshold greater than zero.");
       await saveRobotSettings({ break_even_enabled: enabled, break_even_trigger: trigger });
     },
-    onSuccess: () => { toast.success("Break-even settings saved."); void qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey }); },
+    onSuccess: (_data, enabled) => { if (!enabled) setSavedBreakEvenTrigger(breakEvenTrigger); toast.success("Break-even settings saved."); void qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey }); },
     onError: (error: Error) => toast.error(error.message || "Could not save break-even settings."),
   });
 
@@ -310,11 +234,7 @@ function Dashboard() {
             </span>
           </span>
         </Link>
-      )}
-
-      <OverviewMarketPanel />
-
-      <section className="relative isolate overflow-hidden rounded-2xl border bg-card shadow-glow before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/70 before:to-transparent">
+      )}<section className="relative isolate overflow-hidden rounded-2xl border bg-card shadow-glow before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/70 before:to-transparent">
         <div className="flex items-start justify-between gap-4 p-5 pb-3">
           <div>
             <p className="text-sm text-muted-foreground">Account equity</p>
@@ -365,7 +285,7 @@ function Dashboard() {
             <p className="text-sm font-semibold">Break-Even Protection</p>
             <p className="mt-1 text-xs text-muted-foreground">When combined floating profit across all open positions reaches your target, the EA can move eligible positions' stop-losses to their entry prices.</p>
           </div>
-          <Button size="sm" variant={s.break_even_enabled ? "default" : "outline"} disabled={breakEvenSave.isPending} onClick={() => breakEvenSave.mutate(!s.break_even_enabled)}>
+          <Button size="sm" variant={s.break_even_enabled ? "default" : "outline"} disabled={breakEvenSave.isPending || breakEvenTrigger !== savedBreakEvenTrigger} onClick={() => breakEvenSave.mutate(!s.break_even_enabled)}>
             {breakEvenSave.isPending ? "Saving…" : s.break_even_enabled ? "ON" : "OFF"}
           </Button>
         </div>
@@ -374,7 +294,7 @@ function Dashboard() {
             Combined floating-profit trigger {accountCurrency ? `(${accountCurrency})` : "(account currency)"}
             <input type="number" min="0.01" step="0.01" value={breakEvenTrigger} onChange={(event) => setBreakEvenTrigger(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground" />
           </label>
-          <Button variant="secondary" size="sm" disabled={breakEvenSave.isPending} onClick={() => breakEvenSave.mutate(s.break_even_enabled)}>Save threshold</Button>
+          <Button variant="secondary" size="sm" disabled={breakEvenSave.isPending || !Number.isFinite(Number(breakEvenTrigger)) || Number(breakEvenTrigger) <= 0} onClick={() => breakEvenSave.mutate(false)}>Save threshold</Button>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">Account currency: {accountCurrency ?? "waiting for MT5 currency data"}. This setting is saved to your account; EA-side execution requires an EA build that reads the new settings.</p>
       </section>
@@ -406,7 +326,9 @@ function Dashboard() {
         </div>
       )}
 
-      <section>
+      <details className="group rounded-xl border bg-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm [&::-webkit-details-marker]:hidden"><span className="font-semibold">Open positions</span><span className="text-xs text-muted-foreground">{fresh ? rawTrades.length : "—"} · Tap to view</span></summary>
+        <div className="border-t p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="font-semibold">Open positions</h2>
           <Button variant="destructive" size="sm" disabled={disabledClose} onClick={() => setCloseDialogOpen(true)}>
@@ -440,10 +362,12 @@ function Dashboard() {
             Close All targets positions tagged with MOPSENTRY's magic number across symbols. Manually opened trades are not closed by this command.
           </p>
         )}
-      </section>
+        </div>
+      </details>
 
-      <section>
-        <h2 className="mb-3 font-semibold">Pending orders</h2>
+      <details className="group rounded-xl border bg-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm [&::-webkit-details-marker]:hidden"><span className="font-semibold">Pending orders</span><span className="text-xs text-muted-foreground">{fresh ? pendingOrders.length : "—"} · Tap to view</span></summary>
+        <div className="border-t p-4">
         <div className="space-y-2">
           {pendingOrders.length === 0 ? (
             <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
@@ -473,7 +397,8 @@ function Dashboard() {
             })
           )}
         </div>
-      </section>
+        </div>
+      </details>
 
       <Button
         className="fixed bottom-[86px] left-5 z-40 rounded-full px-5 shadow-xl"
