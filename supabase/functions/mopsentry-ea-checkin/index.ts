@@ -127,12 +127,32 @@ Deno.serve(async (req: Request) => {
     .eq("user_id", account.user_id).maybeSingle();
   if (settingsError) return json({ ok: false, error: "settings_lookup_failed" }, 500);
 
+  const settingsPayload = {
+    is_running: settings?.is_running ?? false,
+    strategy: settings?.strategy ?? "trend",
+    timeframe: settings?.timeframe ?? "M5",
+    scalper_frequency: settings?.scalper_frequency ?? "standard",
+    lot_size: settings?.lot_size ?? 0.10,
+    risk_percent: settings?.risk_percent ?? 1.0,
+    max_trades: settings?.max_trades ?? 5,
+    pairs: Array.isArray(settings?.pairs) ? settings.pairs : ["XAUUSD"],
+    alerts_enabled: settings?.alerts_enabled ?? true,
+  };
+
   return json({
     ok: true,
-    running: settings?.is_running ?? false,
-    strategy: settings?.strategy ?? "trend",
-    lot_size: settings?.lot_size ?? 0.10,
-    max_trades: settings?.max_trades ?? 5,
+    // Keep legacy top-level fields so older EA builds remain compatible.
+    running: settingsPayload.is_running,
+    strategy: settingsPayload.strategy,
+    timeframe: settingsPayload.timeframe,
+    scalper_frequency: settingsPayload.scalper_frequency,
+    lot_size: settingsPayload.lot_size,
+    risk_percent: settingsPayload.risk_percent,
+    max_trades: settingsPayload.max_trades,
+    pairs: settingsPayload.pairs,
+    alerts_enabled: settingsPayload.alerts_enabled,
+    // Structured settings contract for updated EA builds.
+    settings: settingsPayload,
     pending_command_id: command?.id ?? "",
     pending_command_type: command?.command ?? "",
   });
