@@ -42,14 +42,15 @@ function money(value: number | null, currency: string | null) {
 }
 
 function DataList({ title, value }: { title: string; value: unknown }) {
+  const [expanded, setExpanded] = useState(false);
   const items = records(value);
   return (
     <View style={styles.card}>
-      <View style={styles.sectionHeader}>
+      <Pressable onPress={() => setExpanded(current => !current)} style={styles.sectionHeader} accessibilityRole="button" accessibilityState={{ expanded }}>
         <Text style={styles.cardLabel}>{title}</Text>
-        <Text style={styles.count}>{items.length}</Text>
-      </View>
-      {items.length === 0 ? (
+        <Text style={styles.count}>{items.length}  {expanded ? "⌃" : "⌄"}</Text>
+      </Pressable>
+      {expanded ? items.length === 0 ? (
         <Text style={styles.muted}>No {title.toLowerCase()} reported by the EA.</Text>
       ) : items.map((item, index) => (
         <View key={String(item.ticket ?? item.order ?? item.id ?? index)} style={styles.tradeRow}>
@@ -60,7 +61,7 @@ function DataList({ title, value }: { title: string; value: unknown }) {
             </View>
           ))}
         </View>
-      ))}
+      )) : null}
     </View>
   );
 }
