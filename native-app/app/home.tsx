@@ -87,6 +87,12 @@ export default function HomeScreen() {
   const [displayCurrency, setDisplayCurrency] = useState("ZAR");
   const [conversionRate, setConversionRate] = useState<number | null>(1);
 
+  useEffect(() => {
+    void SecureStore.getItemAsync("mopsentry-display-currency").then(value => {
+      if (value && /^[A-Z]{3}$/.test(value)) setDisplayCurrency(value);
+    }).catch(() => {});
+  }, []);
+
   const refresh = useCallback(async () => {
     const { data: auth, error: authError } = await supabase.auth.getUser();
     if (authError || !auth.user) {
