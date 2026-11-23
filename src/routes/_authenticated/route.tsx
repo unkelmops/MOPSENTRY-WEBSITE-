@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, Bot, Radio, Link2, LogOut, MoreVertical, UserRound, BrainCircuit } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ThemePicker } from "@/components/theme-picker";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo-mopsentry-a-clean.png";
 
@@ -26,6 +27,9 @@ const tabs = [
 function AppLayout() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [currency, setCurrency] = useState("ZAR");
+  useEffect(() => { try { const saved = localStorage.getItem("mopsentry-currency"); if (saved && /^[A-Z]{3}$/.test(saved)) setCurrency(saved); } catch { /* optional storage */ } }, []);
+  const changeCurrency = (next: string) => { setCurrency(next); try { localStorage.setItem("mopsentry-currency", next); } catch { /* current session only */ } window.dispatchEvent(new Event("mopsentry-currency-change")); };
   const signOut = async () => {
     await qc.cancelQueries();
     qc.clear();
