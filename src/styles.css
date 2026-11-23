@@ -51,6 +51,10 @@
   --color-theme-blue: oklch(0.73 0.15 245);
   --color-theme-black: oklch(0.12 0 0);
   --color-theme-yellow: oklch(0.9 0.17 95);
+  --color-theme-purple: oklch(0.72 0.17 300);
+  --color-theme-green: oklch(0.78 0.18 155);
+  --color-theme-cyan: oklch(0.82 0.14 205);
+  --color-theme-orange: oklch(0.8 0.17 55);
   --color-report-highlight: var(--report-highlight);
 }
 
@@ -119,6 +123,26 @@
   --primary: var(--color-theme-yellow);
   --primary-foreground: oklch(0.18 0.02 95);
   --accent: oklch(0.28 0.025 95);
+}
+[data-theme="purple"] {
+  --primary: var(--color-theme-purple);
+  --primary-foreground: oklch(0.16 0.03 300);
+  --accent: oklch(0.28 0.04 300);
+}
+[data-theme="green"] {
+  --primary: var(--color-theme-green);
+  --primary-foreground: oklch(0.16 0.03 155);
+  --accent: oklch(0.28 0.04 155);
+}
+[data-theme="cyan"] {
+  --primary: var(--color-theme-cyan);
+  --primary-foreground: oklch(0.15 0.03 205);
+  --accent: oklch(0.28 0.04 205);
+}
+[data-theme="orange"] {
+  --primary: var(--color-theme-orange);
+  --primary-foreground: oklch(0.18 0.03 55);
+  --accent: oklch(0.28 0.04 55);
 }
 [data-theme] {
   --ring: var(--primary);
