@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -87,6 +87,7 @@ export default function HomeScreen() {
   const [displayCurrency, setDisplayCurrency] = useState("ZAR");
   const [conversionRate, setConversionRate] = useState<number | null>(1);
   const [accountDetailsExpanded, setAccountDetailsExpanded] = useState(false);
+  const [breakEvenModalOpen, setBreakEvenModalOpen] = useState(false);
 
   useEffect(() => {
     void SecureStore.getItemAsync("mopsentry-display-currency").then(value => {
@@ -208,6 +209,10 @@ export default function HomeScreen() {
           <View style={{ flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#20364e" }}>{[[ "BALANCE",connected?displayMoney(account?.balance??null):"—" ],[ "EQUITY",connected?displayMoney(account?.equity??null):"—" ],[ "FLOATING P/L",connected?displayMoney(Number(account?.equity??0)-Number(account?.balance??0)):"—" ]].map(([label,value],index)=><View key={label} style={{ flex: 1, paddingHorizontal: 9, paddingVertical: 12, borderRightWidth: index===2?0:1, borderRightColor: "#20364e" }}><Text style={{ color: "#8FA3BA", fontSize: 9, fontWeight: "700" }}>{label}</Text><Text numberOfLines={1} style={{ color: label==="FLOATING P/L"?(Number(account?.equity??0)-Number(account?.balance??0))>=0?"#39D69A":"#FF7184":"#FFFFFF", fontSize: 11, fontWeight: "900", marginTop: 5 }}>{value}</Text></View>)}</View>
           <View style={{ paddingHorizontal: 14, paddingTop: 12, paddingBottom: 5, flexDirection: "row", justifyContent: "space-between" }}><Text style={{ color: "#FFFFFF", fontWeight: "900", fontSize: 11 }}>POSITIONS</Text><Text style={{ color: "#66C2FF", fontSize: 9, fontWeight: "900" }}>{connected?records(account?.open_trades).length:"—"} OPEN</Text></View>
           {connected&&records(account?.open_trades).length>0?records(account?.open_trades).map((trade,index)=>{const side=String(trade.side??trade.type??"BUY").toUpperCase();const pnl=Number(trade.profit??trade.pnl??0);return <View key={String(trade.ticket??index)} style={{ marginHorizontal: 10, borderTopWidth: 1, borderTopColor: "#20364e", paddingVertical: 11, gap: 8 }}><View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><View><Text style={{ color: "#FFFFFF", fontWeight: "900", fontSize: 13 }}>{String(trade.symbol??trade.pair??"—")}</Text><Text style={{ color: side.includes("SELL")?"#FF7184":"#39D69A", fontSize: 9, fontWeight: "900", marginTop: 3 }}>{side}</Text></View><Text style={{ color: pnl>=0?"#39D69A":"#FF7184", fontWeight: "900", fontSize: 13 }}>{displayMoney(pnl)}</Text></View><View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>{[[ "VOLUME",Number(trade.lots??trade.volume??0).toFixed(2) ],[ "PRICE",String(trade.open_price??trade.open??"—") ],[ "MARKET",String(trade.current_price??trade.current??"—") ],[ "S/L",String(trade.sl??trade.stop_loss??"—") ],[ "T/P",String(trade.tp??trade.take_profit??"—") ]].map(([label,value])=><View key={label} style={{ minWidth: "28%" }}><Text style={{ color: "#8FA3BA", fontSize: 9, fontWeight: "700" }}>{label}</Text><Text style={{ color: "#E6EEF8", fontSize: 11, marginTop: 3 }}>{value}</Text></View>)}</View></View>}) : <Text style={[styles.description,{paddingHorizontal:14,paddingBottom:14,color:"#8FA3BA"}]}>{connected?"No open positions.":"Live positions appear here when MT5 reconnects."}</Text>}
+          <View style={{ borderTopWidth: 1, borderTopColor: "#20364e", paddingHorizontal: 14, paddingVertical: 11 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}><Text style={{ color: "#C7D8EA", fontSize: 10, fontWeight: "900", letterSpacing: 1 }}>PENDING ORDERS</Text><Text style={{ color: "#B7A0FF", fontSize: 9, fontWeight: "900" }}>{connected ? records(account?.pending_orders).length : "—"} WAITING</Text></View>
+            {connected && records(account?.pending_orders).length ? records(account?.pending_orders).map((order,index)=><View key={String(order.ticket??index)} style={{ borderTopWidth: 1, borderTopColor: "#20364e", paddingVertical: 9, flexDirection: "row", justifyContent: "space-between", gap: 10 }}><View><Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: 12 }}>{String(order.symbol??"—")}</Text><Text style={{ color: "#B7A0FF", fontSize: 9, marginTop: 3 }}>{String(order.type??"PENDING").replaceAll("_"," ")} · {Number(order.volume??0).toFixed(2)} lots</Text><Text style={{ color: "#8FA3BA", fontSize: 9, marginTop: 3 }}>SL {displayValue(order.sl)} · TP {displayValue(order.tp)}</Text></View><Text style={{ color: "#E6EEF8", fontSize: 11, fontWeight: "700" }}>@ {displayValue(order.entry_price)}</Text></View>) : <Text style={{ color: "#8FA3BA", fontSize: 10, paddingVertical: 6 }}>{connected ? "No pending orders." : "Pending orders appear when MT5 reconnects."}</Text>}
+          </View>
         </View>
         <Pressable onPress={() => setAccountDetailsExpanded(value => !value)} style={[styles.settingsLink, { paddingVertical: 12 }]}>
           <View style={{ flex: 1 }}><Text style={styles.controlsTitle}>Trade account connected</Text><Text style={styles.description}>{connected ? `${account?.broker_server || "MT5"} · Login ${account?.login || "—"}` : "Connection details and account status"}</Text></View><Text style={styles.controlsArrow}>{accountDetailsExpanded ? "−" : "+"}</Text>
@@ -221,38 +226,33 @@ export default function HomeScreen() {
           <Text style={styles.description}>Last EA heartbeat: {account?.last_heartbeat ? new Date(account.last_heartbeat).toLocaleString() : "Not received"}</Text>
         </View> : null}
 
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>BREAK-EVEN PROTECTION</Text>
-          
-          <View style={styles.breakEvenRow}>
-            <Text style={styles.controlsTitle}>Auto break-even</Text>
-            <Pressable accessibilityRole="switch" accessibilityState={{ checked: robotSettings?.break_even_enabled === true }} disabled={savingBreakEven || !robotSettings || Number(breakEvenDraft) !== Number(robotSettings.break_even_trigger)} onPress={async () => {
-              if (!robotSettings || savingBreakEven) return;
-              const amount = Number(breakEvenDraft);
-              if (amount !== Number(robotSettings.break_even_trigger)) { setError("Save the profit target first, then switch break-even ON."); return; }
-              if (!Number.isFinite(amount) || amount <= 0) { setError("Enter a profit target greater than zero."); return; }
-              setSavingBreakEven(true);
-              const { data: auth } = await supabase.auth.getUser();
-              const result = auth.user ? await supabase.from("robot_settings").update({ break_even_enabled: !robotSettings.break_even_enabled, break_even_trigger: amount, updated_at: new Date().toISOString() }).eq("user_id", auth.user.id) : { error: new Error("Please sign in again.") };
-              if (result.error) setError(result.error.message); else setRobotSettings({ break_even_enabled: !robotSettings.break_even_enabled, break_even_trigger: amount });
-              setSavingBreakEven(false);
-            }} style={[styles.breakEvenToggle, robotSettings?.break_even_enabled ? styles.breakEvenOn : styles.breakEvenOff]}>
-              <Text style={styles.breakEvenToggleText}>{savingBreakEven ? "…" : robotSettings?.break_even_enabled ? "ON" : "OFF"}</Text>
-            </Pressable>
+        <Pressable onPress={() => setBreakEvenModalOpen(true)} style={[styles.settingsLink,{borderWidth:1,borderColor:"#2B789C",borderRadius:16,padding:15,backgroundColor:"#0B2032"}]}>
+          <View style={{flex:1}}><Text style={styles.controlsTitle}>Break-Even Protection</Text><Text style={[styles.description,{color:robotSettings?.break_even_enabled?"#39D69A":"#8FA3BA"}]}>{robotSettings?.break_even_enabled?"ON":"OFF"} · Tap to configure</Text></View><Text style={styles.controlsArrow}>›</Text>
+        </Pressable>
+
+        <Modal visible={breakEvenModalOpen} transparent animationType="fade" onRequestClose={() => setBreakEvenModalOpen(false)}>
+          <View style={{flex:1,backgroundColor:"rgba(0,0,0,.72)",justifyContent:"center",padding:22}}>
+            <View style={{backgroundColor:"#102235",borderRadius:20,borderWidth:1,borderColor:"#2B789C",padding:20}}>
+              <Text style={{color:"#FFFFFF",fontSize:18,fontWeight:"900"}}>Break-Even Protection</Text>
+              <Text style={{color:"#8FA3BA",fontSize:12,marginTop:5}}>Configure your profit target and protection.</Text>
+              <Text style={styles.fieldLabel}>Profit target · {account?.account_currency || "account currency"}</Text>
+              <TextInput value={breakEvenDraft} onChangeText={setBreakEvenDraft} keyboardType="decimal-pad" style={styles.breakEvenInput} placeholder="10.00" placeholderTextColor={palette.muted}/>
+              <View style={{flexDirection:"row",gap:10,marginTop:16}}>
+                <Pressable onPress={()=>setBreakEvenModalOpen(false)} style={[styles.breakEvenSave,{flex:1,backgroundColor:"#26394C"}]}><Text style={styles.breakEvenSaveText}>CANCEL</Text></Pressable>
+                <Pressable disabled={!robotSettings||savingBreakEven} onPress={async()=>{
+                  const amount=Number(breakEvenDraft);
+                  if(!Number.isFinite(amount)||amount<=0){setError("Enter a profit target greater than zero.");return;}
+                  setSavingBreakEven(true);
+                  const {data:auth}=await supabase.auth.getUser();
+                  const enabled=!robotSettings!.break_even_enabled;
+                  const result=auth.user?await supabase.from("robot_settings").update({break_even_enabled:enabled,break_even_trigger:amount,updated_at:new Date().toISOString()}).eq("user_id",auth.user.id):{error:new Error("Please sign in again.")};
+                  if(result.error)setError(result.error.message);else{setRobotSettings({break_even_enabled:enabled,break_even_trigger:amount});setBreakEvenModalOpen(false);}
+                  setSavingBreakEven(false);
+                }} style={[styles.breakEvenSave,{flex:1,opacity:savingBreakEven?0.5:1}]}><Text style={styles.breakEvenSaveText}>{savingBreakEven?"SAVING…":"SAVE & "+(robotSettings?.break_even_enabled?"TURN OFF":"TURN ON")}</Text></Pressable>
+              </View>
+            </View>
           </View>
-          <Text style={styles.fieldLabel}>Profit target · {account?.account_currency || "account currency"}</Text>
-          <TextInput value={breakEvenDraft} onChangeText={setBreakEvenDraft} keyboardType="decimal-pad" style={styles.breakEvenInput} placeholder="10.00" placeholderTextColor={palette.muted} />
-          <Pressable disabled={!robotSettings || savingBreakEven} onPress={async () => {
-            const amount = Number(breakEvenDraft);
-            if (!Number.isFinite(amount) || amount <= 0) { setError("Enter a profit target greater than zero."); return; }
-            setSavingBreakEven(true);
-            const { data: auth } = await supabase.auth.getUser();
-            const result = auth.user ? await supabase.from("robot_settings").update({ break_even_trigger: amount, updated_at: new Date().toISOString() }).eq("user_id", auth.user.id) : { error: new Error("Please sign in again.") };
-            if (result.error) setError(result.error.message); else setRobotSettings({ ...(robotSettings as { break_even_enabled: boolean; break_even_trigger: number }), break_even_trigger: amount });
-            setSavingBreakEven(false);
-          }} style={styles.breakEvenSave}><Text style={styles.breakEvenSaveText}>SAVE TARGET</Text></Pressable>
-          <Text style={styles.description}>This saves the setting. Automatic stop-loss changes need a compatible EA update.</Text>
-        </View>
+        </Modal>
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>APP ACCESS</Text>
@@ -275,10 +275,6 @@ export default function HomeScreen() {
           <Text style={styles.controlsArrow}>›</Text>
         </Pressable>
 
-        {account ? <>
-          <DataList title="Open positions" value={account.open_trades} />
-          <DataList title="Pending orders" value={account.pending_orders} />
-        </> : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Text style={styles.refreshText}>Auto-refreshes every 5 seconds{updatedAt ? " · Updated " + updatedAt.toLocaleTimeString() : ""}</Text>
