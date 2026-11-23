@@ -95,6 +95,7 @@ function Dashboard() {
   const [savedBreakEvenTrigger, setSavedBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const [displayCurrency, setDisplayCurrency] = useState("ZAR");
   const [conversionRate, setConversionRate] = useState<number | null>(null);
+  const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
   useEffect(() => {
     if (!accountCurrency || !/^[A-Z]{3}$/.test(accountCurrency)) { setConversionRate(null); return; }
     if (accountCurrency === displayCurrency) { setConversionRate(1); return; }
@@ -107,7 +108,6 @@ function Dashboard() {
     return () => { active = false; };
   }, [accountCurrency, displayCurrency]);
   const displayMoney = (value: number | null) => value == null ? "—" : conversionRate == null ? "Rate unavailable" : money(value * conversionRate, displayCurrency);
-  const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
   const breakEvenSave = useMutation({
     mutationFn: async (enabled: boolean) => {
       const trigger = Number(breakEvenTrigger);
