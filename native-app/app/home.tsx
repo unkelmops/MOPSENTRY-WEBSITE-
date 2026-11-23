@@ -65,54 +65,6 @@ function DataList({ title, value }: { title: string; value: unknown }) {
   );
 }
 
-type MarketQuote = { bid: number | null; ask: number | null; last: number | null };
-type MarketCandle = { close: number };
-function OverviewMarketPreview() {
-  const [quote, setQuote] = useState<MarketQuote | null>(null);
-  const [candles, setCandles] = useState<MarketCandle[]>([]);
-  const [healthy, setHealthy] = useState(false);
-  useEffect(() => {
-    let active = true;
-    const refresh = async () => {
-      try {
-        await supabase.functions.invoke("mopsentry-market-sync", { body: { symbol: "XAUUSD", timeframe: "H1" } });
-        const [q, h, status] = await Promise.all([
-          supabase.from("market_quotes").select("bid,ask,last").eq("instrument_symbol", "XAUUSD").eq("source", "independent").order("observed_at", { ascending: false }).limit(1),
-          supabase.from("market_candles").select("close").eq("instrument_symbol", "XAUUSD").eq("source", "independent").eq("timeframe", "H1").order("candle_open_at", { ascending: true }).limit(32),
-          supabase.from("market_data_health").select("status").eq("instrument_symbol", "XAUUSD").eq("source", "independent").maybeSingle(),
-        ]);
-        if (q.error) throw q.error;
-        if (h.error) throw h.error;
-        if (status.error) throw status.error;
-        if (!active) return;
-        setQuote((q.data?.[0] as MarketQuote | undefined) ?? null);
-        setCandles((h.data ?? []) as MarketCandle[]);
-        setHealthy(status.data?.status === "healthy");
-      } catch { if (active) setHealthy(false); }
-    };
-    void refresh();
-    const timer = setInterval(() => void refresh(), 15_000);
-    return () => { active = false; clearInterval(timer); };
-  }, []);
-  const values = candles.map(c => c.close);
-  const low = values.length ? Math.min(...values) : 0;
-  const high = values.length ? Math.max(...values) : 1;
-  const fmt = (v: number | null | undefined) => v == null ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  return <>
-    <Pressable onPress={() => router.push("/market-report")} style={styles.marketPanel}>
-      <View style={styles.marketTop}><View><Text style={styles.marketEyebrow}>MARKET PULSE · XAUUSD</Text><Text style={styles.marketPrice}>{fmt(quote?.last)}</Text></View><Text style={[styles.marketStatus, healthy && styles.marketLive]}>{healthy ? "● LIVE" : "○ WAITING"}</Text></View>
-      <View style={styles.marketQuoteRow}><Text style={styles.marketQuote}>BID  <Text style={styles.marketQuoteStrong}>{fmt(quote?.bid)}</Text></Text><Text style={styles.marketQuote}>ASK  <Text style={styles.marketQuoteStrong}>{fmt(quote?.ask)}</Text></Text></View>
-      <View style={styles.sparkline}>{values.length > 1 ? values.map((v, i) => <View key={i} style={[styles.sparkBar, { height: 8 + ((v - low) / Math.max(high - low, 0.000001)) * 36 }]}/>) : <Text style={styles.marketWaiting}>Waiting for verified Gold candles</Text>}</View>
-      <View style={styles.marketBottom}><Text style={styles.marketCaption}>{candles.length} verified H1 candles</Text><Text style={styles.marketLink}>OPEN MARKET REPORT  ›</Text></View>
-    </Pressable>
-    <Pressable onPress={() => router.push("/market-report")} style={styles.setupPanel}>
-      <View style={styles.setupIcon}><Text style={styles.setupIconText}>◎</Text></View>
-      <View style={{ flex: 1 }}><Text style={styles.setupEyebrow}>SETUP WATCH</Text><Text style={styles.setupTitle}>Trade Setup</Text><Text style={styles.setupDescription}>No confirmed setup. Validated entry, stop loss and targets will appear here.</Text></View>
-      <Text style={styles.setupArrow}>›</Text>
-    </Pressable>
-  </>;
-}
-
 export default function HomeScreen() {
   const [email, setEmail] = useState("");
   const [access, setAccess] = useState<boolean | null>(null);
@@ -123,6 +75,8 @@ export default function HomeScreen() {
   const [robotSettings, setRobotSettings] = useState<{ break_even_enabled: boolean; break_even_trigger: number } | null>(null);
   const [breakEvenDraft, setBreakEvenDraft] = useState("10");
   const [savingBreakEven, setSavingBreakEven] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState("ZAR");
+  const [conversionRate, setConversionRate] = useState<number | null>(1);
 
   const refresh = useCallback(async () => {
     const { data: auth, error: authError } = await supabase.auth.getUser();
@@ -180,6 +134,24 @@ export default function HomeScreen() {
 
   const heartbeat = account?.last_heartbeat ? new Date(account.last_heartbeat).getTime() : 0;
   const connected = account?.status === "connected" && Number.isFinite(heartbeat) && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 30000;
+  useEffect(() => {
+    const base = account?.account_currency?.toUpperCase();
+    if (!base || !/^[A-Z]{3}$/.test(base) || base === displayCurrency) { setConversionRate(base === displayCurrency ? 1 : null); return; }
+    let active = true;
+    setConversionRate(null);
+    fetch(`https://open.er-api.com/v6/latest/${base}`).then(response => response.json()).then(data => {
+      const rate = Number(data?.rates?.[displayCurrency]);
+      if (active) setConversionRate(Number.isFinite(rate) && rate > 0 ? rate : null);
+    }).catch(() => { if (active) setConversionRate(null); });
+    return () => { active = false; };
+  }, [account?.account_currency, displayCurrency]);
+  const displayMoney = (value: number | null) => {
+    if (value == null) return "—";
+    if (conversionRate == null) return "Rate unavailable";
+    const converted = value * conversionRate;
+    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: displayCurrency }).format(converted); }
+    catch { return `${converted.toFixed(2)} ${displayCurrency}`; }
+  };
 
   if (loading) {
     return <View style={styles.loading}><ActivityIndicator color={palette.blue} /><Text style={styles.muted}>Loading your secure session…</Text></View>;
@@ -197,7 +169,6 @@ export default function HomeScreen() {
           <View style={[styles.statusPill, connected ? styles.connected : styles.disconnected]}><View style={[styles.dot, connected ? styles.dotOn : styles.dotOff]} /><Text style={styles.statusText}>{connected ? "MT5 CONNECTED" : "NOT CONNECTED"}</Text></View>
         </View>
 
-        <OverviewMarketPreview />
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>ACCOUNT</Text>
@@ -205,10 +176,13 @@ export default function HomeScreen() {
           {account ? <>
             <Text style={styles.description}>{account.broker_server || "Broker not reported"} · Login {account.login || "—"}</Text>
             <View style={styles.metrics}>
-              <View style={styles.metric}><Text style={styles.fieldLabel}>BALANCE</Text><Text style={styles.metricValue}>{money(account.balance, account.account_currency)}</Text></View>
-              <View style={styles.metric}><Text style={styles.fieldLabel}>EQUITY</Text><Text style={styles.metricValue}>{money(account.equity, account.account_currency)}</Text></View>
+              <View style={styles.metric}><Text style={styles.fieldLabel}>BALANCE</Text><Text style={styles.metricValue}>{displayMoney(account.balance)}</Text></View>
+              <View style={styles.metric}><Text style={styles.fieldLabel}>EQUITY</Text><Text style={styles.metricValue}>{displayMoney(account.equity)}</Text></View>
             </View>
-            <Text style={styles.description}>Account currency: {account.account_currency || "Waiting for MT5 currency data"}</Text>
+            <Text style={styles.description}>MT5 account currency: {account.account_currency || "Waiting for MT5 currency data"}</Text>
+            <Text style={styles.fieldLabel}>DISPLAY CURRENCY</Text>
+            <View style={styles.currencyRow}>{["ZAR", "USD", "EUR", "GBP"].map(code => <Pressable key={code} onPress={() => setDisplayCurrency(code)} style={[styles.currencyButton, displayCurrency === code && styles.currencyActive]}><Text style={[styles.currencyText, displayCurrency === code && styles.currencyTextActive]}>{code}</Text></Pressable>)}</View>
+            <Text style={styles.description}>Converted display only · {conversionRate == null ? "Exchange rate unavailable" : `Rate ${conversionRate.toFixed(4)} from ${account.account_currency} to ${displayCurrency}`}</Text>
             <Text style={styles.description}>EA state: {account.ea_state || "Not reported"} · Version: {account.ea_version || "—"}</Text>
             <Text style={styles.description}>Last EA heartbeat: {account.last_heartbeat ? new Date(account.last_heartbeat).toLocaleString() : "Not received"}</Text>
           </> : <Text style={styles.description}>No MT5 account has been linked to this user yet. Account details will appear after the EA connects.</Text>}
@@ -219,9 +193,10 @@ export default function HomeScreen() {
           <Text style={styles.description}>When combined floating profit across all open positions reaches your target, a compatible EA can move eligible stop-losses to entry.</Text>
           <View style={styles.breakEvenRow}>
             <Text style={styles.controlsTitle}>Automatic break-even</Text>
-            <Pressable accessibilityRole="switch" accessibilityState={{ checked: robotSettings?.break_even_enabled === true }} onPress={async () => {
+            <Pressable accessibilityRole="switch" accessibilityState={{ checked: robotSettings?.break_even_enabled === true }} disabled={savingBreakEven || !robotSettings || Number(breakEvenDraft) !== Number(robotSettings.break_even_trigger)} onPress={async () => {
               if (!robotSettings || savingBreakEven) return;
               const amount = Number(breakEvenDraft);
+              if (amount !== Number(robotSettings.break_even_trigger)) { setError("Save the profit target first, then switch break-even ON."); return; }
               if (!Number.isFinite(amount) || amount <= 0) { setError("Enter a profit target greater than zero."); return; }
               setSavingBreakEven(true);
               const { data: auth } = await supabase.auth.getUser();
@@ -302,6 +277,11 @@ const styles = StyleSheet.create({
   moduleTitle: { color: palette.text, fontSize: 19, fontWeight: "800", marginTop: 10 },
   description: { color: palette.muted, fontSize: 12, lineHeight: 19, marginTop: 9 },
   metrics: { flexDirection: "row", gap: 12, marginTop: 18, marginBottom: 4 },
+  currencyRow: { flexDirection: "row", gap: 7, marginTop: 8 },
+  currencyButton: { borderWidth: 1, borderColor: palette.border, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8 },
+  currencyActive: { borderColor: palette.blue, backgroundColor: palette.surfaceBlue },
+  currencyText: { color: palette.muted, fontSize: 10, fontWeight: "800" },
+  currencyTextActive: { color: palette.blueBright },
   metric: { flex: 1, backgroundColor: palette.background, borderRadius: 12, padding: 12 },
   metricValue: { color: palette.text, fontSize: 17, fontWeight: "800", marginTop: 7 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
@@ -327,26 +307,26 @@ const styles = StyleSheet.create({
   controlsTitle: { color: palette.text, fontSize: 15, fontWeight: "800" },
   controlsArrow: { color: palette.blueBright, fontSize: 28, fontWeight: "300" },
   settingsLink: { borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surface, borderRadius: 16, padding: 17, marginBottom: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  marketPanel: { borderWidth: 1, borderColor: palette.borderStrong, borderRadius: 20, padding: 16, marginBottom: 12, backgroundColor: "#0B1A2B", overflow: "hidden" },
-  marketTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
-  marketEyebrow: { color: palette.blueBright, fontSize: 9, fontWeight: "900", letterSpacing: 1.4 },
-  marketPrice: { color: palette.text, fontSize: 30, fontWeight: "900", marginTop: 7 },
-  marketStatus: { color: palette.muted, fontSize: 8, fontWeight: "900" },
-  marketLive: { color: palette.green },
-  marketQuoteRow: { flexDirection: "row", gap: 20, marginTop: 7 },
-  marketQuote: { color: palette.muted, fontSize: 9 },
-  marketQuoteStrong: { color: palette.text, fontWeight: "800" },
-  sparkline: { height: 50, flexDirection: "row", alignItems: "flex-end", gap: 3, marginTop: 14, overflow: "hidden" },
-  sparkBar: { flex: 1, minWidth: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2, backgroundColor: palette.blue },
-  marketWaiting: { color: palette.muted, fontSize: 10, alignSelf: "center" },
-  marketBottom: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 11 },
-  marketCaption: { color: palette.subtle, fontSize: 8, flex: 1 },
-  marketLink: { color: palette.blueBright, fontSize: 8, fontWeight: "900", letterSpacing: 0.4 },
-  setupPanel: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: "#65528D", borderRadius: 17, padding: 14, marginBottom: 14, backgroundColor: "#17162B" },
-  setupIcon: { width: 38, height: 38, borderRadius: 12, borderWidth: 1, borderColor: "#65528D", backgroundColor: "#27213E", alignItems: "center", justifyContent: "center" },
-  setupIconText: { color: "#C8AEFF", fontSize: 20 },
-  setupEyebrow: { color: "#C8AEFF", fontSize: 8, fontWeight: "900", letterSpacing: 1.2 },
-  setupTitle: { color: palette.text, fontSize: 14, fontWeight: "900", marginTop: 3 },
-  setupDescription: { color: palette.muted, fontSize: 9, lineHeight: 14, marginTop: 4 },
-  setupArrow: { color: "#C8AEFF", fontSize: 26, fontWeight: "300" },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 });
