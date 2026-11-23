@@ -223,9 +223,9 @@ export default function HomeScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>BREAK-EVEN PROTECTION</Text>
-          <Text style={styles.description}>When combined floating profit across all open positions reaches your target, a compatible EA can move eligible stop-losses to entry.</Text>
+          
           <View style={styles.breakEvenRow}>
-            <Text style={styles.controlsTitle}>Automatic break-even</Text>
+            <Text style={styles.controlsTitle}>Auto break-even</Text>
             <Pressable accessibilityRole="switch" accessibilityState={{ checked: robotSettings?.break_even_enabled === true }} disabled={savingBreakEven || !robotSettings || Number(breakEvenDraft) !== Number(robotSettings.break_even_trigger)} onPress={async () => {
               if (!robotSettings || savingBreakEven) return;
               const amount = Number(breakEvenDraft);
@@ -240,7 +240,7 @@ export default function HomeScreen() {
               <Text style={styles.breakEvenToggleText}>{savingBreakEven ? "…" : robotSettings?.break_even_enabled ? "ON" : "OFF"}</Text>
             </Pressable>
           </View>
-          <Text style={styles.fieldLabel}>Combined floating-profit trigger · {account?.account_currency || "account currency"}</Text>
+          <Text style={styles.fieldLabel}>Profit target · {account?.account_currency || "account currency"}</Text>
           <TextInput value={breakEvenDraft} onChangeText={setBreakEvenDraft} keyboardType="decimal-pad" style={styles.breakEvenInput} placeholder="10.00" placeholderTextColor={palette.muted} />
           <Pressable disabled={!robotSettings || savingBreakEven} onPress={async () => {
             const amount = Number(breakEvenDraft);
