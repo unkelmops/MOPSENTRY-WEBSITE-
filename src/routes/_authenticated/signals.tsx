@@ -352,63 +352,64 @@ function Signals() {
       {activeTab === "news" && <FundamentalEvents />}
 
       {activeTab === "trades" && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
+        <section className="overflow-hidden rounded-2xl border border-sky-500/30 bg-[#071522] text-slate-100 shadow-[0_0_28px_rgba(14,165,233,0.08)]">
+          <div className="flex items-center justify-between gap-3 border-b border-sky-900/70 bg-[#0b2032] px-4 py-3">
             <div>
-              <h2 className="font-semibold">Trade</h2>
-              <p className="text-[11px] text-muted-foreground">Account overview · live positions</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-400">MOPSENTRY · TRADE TERMINAL</p>
+              <h2 className="mt-1 text-lg font-black tracking-tight">Trade</h2>
+              <p className="text-[10px] text-slate-400">Account overview · live positions</p>
             </div>
-            <span className="rounded-md border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">{live.length} positions</span>
+            <span className="rounded-lg border border-sky-700/70 bg-sky-950/70 px-3 py-2 text-[10px] font-black text-sky-300">{live.length} OPEN</span>
           </div>
 
-          <div className="overflow-hidden rounded-xl border bg-card">
-            <div className="grid grid-cols-2 divide-x divide-border">
-              <div className="p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Balance</p>
-                <p className="mt-1 font-mono text-base font-bold tabular-nums">{ta?.balance == null ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta.account_currency || "ZAR", maximumFractionDigits: 2 }).format(Number(ta.balance))}</p>
-              </div>
-              <div className="p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Equity</p>
-                <p className="mt-1 font-mono text-base font-bold tabular-nums">{ta?.equity == null ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta.account_currency || "ZAR", maximumFractionDigits: 2 }).format(Number(ta.equity))}</p>
-              </div>
+          <div className="grid grid-cols-2 gap-px bg-sky-900/70">
+            <div className="bg-[#0a1b2b] p-3">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Balance</p>
+              <p className="mt-1 font-mono text-base font-bold tabular-nums text-white">{ta?.balance == null ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta.account_currency || "ZAR", maximumFractionDigits: 2 }).format(Number(ta.balance))}</p>
             </div>
-            <div className="flex items-center justify-between border-t bg-muted/30 px-3 py-2 text-xs">
-              <span className="text-muted-foreground">Floating P/L</span>
-              <span className="font-mono font-semibold tabular-nums">{live.some(t => typeof t.profit === "number") ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0)) : "—"}</span>
+            <div className="bg-[#0a1b2b] p-3">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Equity</p>
+              <p className="mt-1 font-mono text-base font-bold tabular-nums text-white">{ta?.equity == null ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta.account_currency || "ZAR", maximumFractionDigits: 2 }).format(Number(ta.equity))}</p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border bg-card">
-            <div className="grid grid-cols-[1.15fr_.8fr_.9fr_.9fr] gap-2 border-b bg-muted/40 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-              <span>Symbol / type</span><span className="text-right">Volume</span><span className="text-right">Open price</span><span className="text-right">Current</span>
+          <div className="flex items-center justify-between border-b border-sky-900/70 bg-[#0d2234] px-4 py-2.5">
+            <span className="text-xs font-semibold text-slate-300">Floating P/L</span>
+            <span className={`font-mono text-sm font-black tabular-nums ${live.some(t => typeof t.profit === "number") ? (live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0) >= 0 ? "text-emerald-400" : "text-rose-400") : "text-slate-400"}`}>
+              {live.some(t => typeof t.profit === "number") ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0)) : "—"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-[1.15fr_.65fr_.9fr_.9fr] gap-2 border-b border-sky-900/70 bg-[#102a40] px-3 py-2 text-[8px] font-black uppercase tracking-wider text-sky-200/70">
+            <span>Symbol / type</span><span className="text-right">Volume</span><span className="text-right">Open price</span><span className="text-right">Current</span>
+          </div>
+          {live.length === 0 ? (
+            <div className="p-7 text-center">
+              <p className="text-sm font-semibold text-slate-200">No open positions</p>
+              <p className="mt-1 text-xs text-slate-400">Live positions reported by the EA will appear here.</p>
             </div>
-            {live.length === 0 ? (
-              <div className="p-5 text-center text-sm text-muted-foreground">No open positions right now.</div>
-            ) : live.map((trade, index) => {
-              const buy = trade.side !== "SELL";
-              const profitKnown = typeof trade.profit === "number";
-              return (
-                <div key={trade.ticket ?? index} className="border-b last:border-b-0">
-                  <div className="grid grid-cols-[1.15fr_.8fr_.9fr_.9fr] items-center gap-2 px-3 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-bold">{trade.symbol}</p>
-                      <span className={`mt-1 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold ${buy ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-400"}`}>
-                        {buy ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}{buy ? "BUY" : "SELL"}
-                      </span>
-                    </div>
-                    <span className="text-right font-mono text-xs tabular-nums">{trade.lots}</span>
-                    <span className="text-right font-mono text-xs tabular-nums">{Number.isFinite(trade.open_price) ? trade.open_price.toFixed(2) : "—"}</span>
-                    <span className="text-right font-mono text-xs tabular-nums">{typeof trade.current_price === "number" ? trade.current_price.toFixed(2) : "—"}</span>
+          ) : live.map((trade, index) => {
+            const buy = trade.side !== "SELL";
+            const profitKnown = typeof trade.profit === "number";
+            return (
+              <div key={trade.ticket ?? index} className="border-b border-sky-950/90 px-3 py-3 last:border-b-0">
+                <div className="grid grid-cols-[1.15fr_.65fr_.9fr_.9fr] items-center gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-black text-white">{trade.symbol}</p>
+                    <span className={`mt-1 inline-flex rounded px-1.5 py-0.5 text-[9px] font-black ${buy ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400"}`}>{buy ? "BUY" : "SELL"}</span>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-dashed px-3 py-2 text-[10px] text-muted-foreground">
-                    <span>SL {typeof trade.sl === "number" ? trade.sl.toFixed(2) : "—"} · TP {typeof trade.tp === "number" ? trade.tp.toFixed(2) : "—"}</span>
-                    <span className={`font-mono font-semibold ${profitKnown ? (trade.profit! >= 0 ? "text-emerald-500" : "text-rose-400") : ""}`}>{profitKnown ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(trade.profit!) : "P/L —"}</span>
-                  </div>
+                  <span className="text-right font-mono text-xs tabular-nums text-slate-200">{trade.lots}</span>
+                  <span className="text-right font-mono text-xs tabular-nums text-slate-200">{Number.isFinite(trade.open_price) ? trade.open_price.toFixed(2) : "—"}</span>
+                  <span className="text-right font-mono text-xs tabular-nums text-slate-200">{typeof trade.current_price === "number" ? trade.current_price.toFixed(2) : "—"}</span>
                 </div>
-              );
-            })}
-          </div>
-          <p className="text-[10px] text-muted-foreground">Live account values are read-only snapshots from the connected terminal. Missing fields are shown as — until the EA sends them.</p>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-dashed border-sky-900/70 pt-2 text-[10px]">
+                  <span className="text-slate-400">S/L {typeof trade.sl === "number" ? trade.sl.toFixed(2) : "—"} · T/P {typeof trade.tp === "number" ? trade.tp.toFixed(2) : "—"}</span>
+                  <span className={`font-mono font-bold ${profitKnown ? (trade.profit! >= 0 ? "text-emerald-400" : "text-rose-400") : "text-slate-400"}`}>{profitKnown ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(trade.profit!) : "P/L —"}</span>
+                </div>
+              </div>
+            );
+          })}
+          <p className="border-t border-sky-900/70 bg-[#081a29] px-3 py-2.5 text-[9px] text-slate-400">Read-only terminal snapshot · updated from the connected EA</p>
         </section>
       )}
 
