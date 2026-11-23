@@ -123,29 +123,22 @@ function Control() {
         </div>
       )}
 
-      <Section title="Strategy">
+      <Section title="Strategy" value={selectedStrategy.label}>
         <div className="grid grid-cols-3 gap-2">
-          {strategies.map((st) => (
-            <button
-              key={st.id}
-              type="button"
-              onClick={() => setS({ ...s, strategy: st.id })}
-              aria-pressed={s.strategy === st.id}
-              className={cn(
-                "rounded-lg border py-2 text-sm",
-                s.strategy === st.id ? "border-primary text-primary" : "text-muted-foreground",
-              )}
-            >
-              {st.label}
+          {strategies.map((st, index) => (
+            <button key={st.id} type="button" onClick={() => setS({ ...s, strategy: st.id })} aria-pressed={s.strategy === st.id}
+              className={cn("group relative min-h-[88px] overflow-hidden rounded-xl border p-3 text-left transition-all",
+                s.strategy === st.id ? "border-sky-300/60 bg-gradient-to-br from-sky-400/20 via-blue-500/10 to-violet-500/15 shadow-[0_8px_28px_-16px_rgba(56,189,248,.8)]" : "border-border bg-gradient-to-br from-card to-muted/50 hover:border-sky-300/35")}>
+              <span className={cn("mb-3 grid h-8 w-8 place-items-center rounded-lg text-sm font-black",index===0?"bg-cyan-300/15 text-cyan-300":index===1?"bg-violet-300/15 text-violet-300":"bg-amber-300/15 text-amber-300")}>{index===0?"↗":index===1?"ϟ":"⌘"}</span>
+              <span className="block text-xs font-bold">{st.label}</span>
+              <span className={cn("mt-1 block text-[9px] uppercase tracking-wider",s.strategy===st.id?"text-sky-200":"text-muted-foreground")}>{s.strategy===st.id?"Selected":"Choose"}</span>
             </button>
           ))}
         </div>
-        <div className="mt-3 rounded-lg bg-muted/40 p-3">
-          <p className="text-sm font-medium">{selectedStrategy.label} behaviour</p>
+        <div className="mt-3 rounded-xl border border-sky-300/20 bg-gradient-to-r from-sky-400/10 via-card to-violet-400/5 p-3">
+          <p className="text-sm font-semibold">{selectedStrategy.label}</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selectedStrategy.description}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Order label: <span className="font-mono text-foreground">{selectedStrategy.orderComment}</span>
-          </p>
+          <p className="mt-2 font-mono text-[10px] text-sky-300">{selectedStrategy.orderComment}</p>
         </div>
       </Section>
 
