@@ -32,9 +32,13 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");\n  const [displayCurrency, setDisplayCurrency] = useState("ZAR");
+  const [notice, setNotice] = useState("");
+  const [displayCurrency, setDisplayCurrency] = useState("ZAR");
 
   useEffect(() => {
+    void SecureStore.getItemAsync("mopsentry-display-currency").then(value => {
+      if (value && /^[A-Z]{3}$/.test(value)) setDisplayCurrency(value);
+    }).catch(() => {});
     let mounted = true;
     async function load() {
       try {
@@ -128,6 +132,15 @@ export default function SettingsScreen() {
         <BrandHeader />
         <Text style={styles.eyebrow}>MOPSENTRY · ACCOUNT</Text>
         <Text style={styles.title}>Account</Text>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Display currency</Text>
+          <Text style={styles.body}>Choose how balance, equity and profit are displayed. Your MT5 account currency and actual account values are not changed.</Text>
+          <View style={styles.currencyOptions}>
+            {["ZAR", "USD", "EUR", "GBP", "AUD", "CAD"].map(code => <Pressable key={code} onPress={() => { setDisplayCurrency(code); void SecureStore.setItemAsync("mopsentry-display-currency", code); }} style={[styles.currencyOption, displayCurrency === code && styles.currencyOptionActive]}><Text style={[styles.currencyOptionText, displayCurrency === code && styles.currencyOptionTextActive]}>{code}</Text></Pressable>)}
+          </View>
+          <Text style={styles.body}>Selected: {displayCurrency}</Text>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.label}>SIGNED-IN ACCOUNT</Text>
