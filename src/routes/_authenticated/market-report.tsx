@@ -4,6 +4,7 @@ import { Activity, ArrowUpRight, Clock3, Crosshair, FolderOpen, History, Layers3
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loadMarketSnapshot, type MarketQuote, type MarketCandle, type MarketFeedHealth } from "@/lib/market-data";
+import { analyseMarketCandles } from "@/lib/market-analysis";
 
 
 export const Route = createFileRoute("/_authenticated/market-report")({
@@ -119,6 +120,18 @@ function MarketReport() {
   const [lastFetchedAt, setLastFetchedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
   const selectedFolder = folders.find(folder => folder.id === openFolder);
+  const analysis = analyseMarketCandles(candles);
+  const price = (value: number | null) => value === null ? "—" : new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 }).format(value);
+  const analysisMetrics: Record<string, string[]> = {
+    structure: [analysis.trend.toUpperCase(), analysis.structure, `High ${price(analysis.swingHigh)} / Low ${price(analysis.swingLow)}`],
+    crt: [price(analysis.rangeHigh), price(analysis.rangeLow), price(analysis.rangeMid)],
+    liquidity: [analysis.liquidity, price(analysis.liquidityLevel), analysis.liquidity === "unavailable" ? "Insufficient history" : "Last candle"],
+  };
+  const analysisNotes: Record<string, string> = {
+    structure: analysis.trendNote,
+    crt: analysis.rangeState === "unavailable" ? "A 20-candle reference range is not available yet." : `The latest close is ${analysis.rangeState} relative to the previous 20 completed candles. This is a descriptive range check, not a trade signal.`,
+    liquidity: analysis.liquidity === "unavailable" ? "Not enough swing data to assess a sweep." : analysis.liquidity === "no confirmed sweep" ? "The latest candle did not sweep and close back through the most recent confirmed swing level." : `The latest candle swept the ${analysis.liquidityLevel === null ? "swing" : price(analysis.liquidityLevel)} level and closed back inside.`,
+  };
 
   useEffect(() => {
     let active = true;
@@ -231,9 +244,9 @@ function MarketReport() {
           </div>
           <p className="mb-3 text-xs font-medium text-report-highlight">{folder.pending}</p>
           <dl className="grid gap-3 sm:grid-cols-3">
-            {folder.metrics.map(metric => <div key={metric} className="border-l border-report-highlight/30 pl-3"><dt className="text-xs text-muted-foreground">{metric}</dt><dd className="mt-1 font-mono text-lg">—</dd></div>)}
+            {folder.metrics.map(metric => <div key={metric} className="border-l border-report-highlight/30 pl-3"><dt className="text-xs text-muted-foreground">{metric}</dt><dd className="mt-1 font-mono text-lg">{analysisMetrics[folder.id]?.[folder.metrics.indexOf(metric)] ?? "—"}</dd></div>)}
           </dl>
-          <p className="mt-4 max-w-3xl text-xs leading-relaxed text-muted-foreground">{folder.detail}</p>
+          <p className="mt-4 max-w-3xl text-xs leading-relaxed text-muted-foreground">{analysisNotes[folder.id] ?? folder.detail}</p>
         </>}
       </section>)}
       <p className="text-[11px] leading-relaxed text-muted-foreground">Market charts use a shared external reference feed. No trading signals or accuracy figures are generated until the analysis engine is validated.</p>
