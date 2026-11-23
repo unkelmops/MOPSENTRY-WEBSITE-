@@ -9,11 +9,12 @@ import { AmbientBackground } from "../src/components/AmbientBackground";
 import { buildFundamentalOutlook, fetchUsdEconomicCalendar, type EconomicEvent, type HistoricalEvent } from "../src/lib/fundamental-news";
 
 type Tab = "news" | "trades" | "orders";
-type LiveTrade = { ticket?: number; symbol: string; side: string; lots: number; open_price: number; current_price?: number };
+type LiveTrade = { ticket?: number; symbol: string; side: string; lots: number; open_price: number; current_price?: number; profit?: number; sl?: number; tp?: number };
 type PendingOrder = { ticket: number; symbol: string; type: string; volume: number; entry_price: number; sl?: number; tp?: number; expiration?: string };
-type TradingSnapshot = { open_trades: unknown; pending_orders: unknown };
+type TradingSnapshot = { open_trades: unknown; pending_orders: unknown; balance?: number | null; equity?: number | null; account_currency?: string | null };
 
-const money = (value: number | undefined) => value == null || !Number.isFinite(value) ? "—" : value.toLocaleString("en-US", { maximumFractionDigits: 2 });
+const money = (value: number | undefined | null, currency?: string | null) => value == null || !Number.isFinite(value) ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: currency || "ZAR", maximumFractionDigits: 2 }).format(value);
+const price = (value: number | undefined) => value == null || !Number.isFinite(value) ? "—" : value.toFixed(2);
 const biasLabel = (direction: string) => direction === "bullish" ? "USD may strengthen" : direction === "bearish" ? "USD may weaken" : direction === "neutral" ? "No clear direction" : "Not enough data";
 const biasColor = (direction: string) => direction === "bullish" ? palette.green : direction === "bearish" ? palette.red : palette.amber;
 const formatSast = (value: string) => new Intl.DateTimeFormat("en-ZA", { timeZone: "Africa/Johannesburg", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value)) + " SAST";
@@ -38,7 +39,7 @@ export default function SignalsScreen() {
       const { data: auth, error: authError } = await supabase.auth.getUser();
       if (authError || !auth.user) { router.replace("/"); return; }
       const { data, error } = await supabase.from("trading_accounts")
-        .select("open_trades,pending_orders").eq("user_id", auth.user.id).maybeSingle();
+        .select("open_trades,pending_orders,balance,equity,account_currency").eq("user_id", auth.user.id).maybeSingle();
       if (error) throw error;
       setAccount(data as TradingSnapshot | null);
       setAccountError("");
@@ -137,15 +138,47 @@ export default function SignalsScreen() {
             <Pressable onPress={() => router.push("/events")} style={styles.openEvents}><Text style={styles.openEventsText}>OPEN FULL EVENTS CALENDAR  ›</Text></Pressable>
           </View>
         ) : tab === "trades" ? (
-          <View>
-            <View style={styles.sectionHead}><Text style={styles.sectionTitle}>Live trades</Text><Text style={styles.sectionMeta}>{live.length} OPEN</Text></View>
-            {accountLoading ? <ActivityIndicator color={palette.blue} style={styles.spinner}/> : live.length === 0 ? <View style={styles.empty}><Text style={styles.emptyTitle}>No open trades right now</Text><Text style={styles.body}>When the EA reports an open position, it will appear here.</Text></View> : live.map((trade, index) => {
-              const buy = trade.side !== "SELL";
-              return <View key={trade.ticket ?? index} style={styles.tradeCard}>
-                <View style={styles.eventTop}><Text style={styles.tradeTitle}>{trade.symbol} · {buy ? "BUY" : "SELL"}</Text><Text style={styles.tradeLots}>{money(trade.lots)} lots</Text></View>
-                <View style={styles.tradeMetrics}><View style={styles.metric}><Text style={styles.valueLabel}>ENTRY</Text><Text style={styles.metricValue}>{money(trade.open_price)}</Text></View><View style={styles.metric}><Text style={styles.valueLabel}>CURRENT</Text><Text style={styles.metricValue}>{money(trade.current_price)}</Text></View></View>
-              </View>;
-            })}
+          <View style={styles.tradeTerminal}>
+            <View style={styles.tradeTerminalHead}>
+              <View><Text style={styles.tradeTerminalTitle}>Trade</Text><Text style={styles.tradeTerminalSub}>ACCOUNT OVERVIEW · LIVE POSITIONS</Text></View>
+              <View style={styles.positionCount}><Text style={styles.positionCountText}>{live.length} OPEN</Text></View>
+            </View>
+            {accountLoading ? <ActivityIndicator color={palette.blue} style={styles.spinner}/> : (
+              <>
+                <View style={styles.accountMetrics}>
+                  <View style={styles.accountMetric}><Text style={styles.valueLabel}>BALANCE</Text><Text style={styles.accountMetricValue}>{money(account?.balance, account?.account_currency)}</Text></View>
+                  <View style={styles.accountMetric}><Text style={styles.valueLabel}>EQUITY</Text><Text style={styles.accountMetricValue}>{money(account?.equity, account?.account_currency)}</Text></View>
+                </View>
+                <View style={styles.floatingRow}>
+                  <Text style={styles.floatingLabel}>Floating P/L</Text>
+                  <Text style={[styles.floatingValue, { color: live.some(t => typeof t.profit === "number") ? (live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0) >= 0 ? palette.green : palette.red) : palette.muted }]}>
+                    {live.some(t => typeof t.profit === "number") ? money(live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0), account?.account_currency) : "—"}
+                  </Text>
+                </View>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderText, styles.symbolCol]}>SYMBOL / TYPE</Text><Text style={[styles.tableHeaderText, styles.volumeCol]}>VOLUME</Text><Text style={[styles.tableHeaderText, styles.priceCol]}>OPEN PRICE</Text><Text style={[styles.tableHeaderText, styles.priceCol]}>CURRENT</Text>
+                </View>
+                {live.length === 0 ? <View style={styles.empty}><Text style={styles.emptyTitle}>No open positions</Text><Text style={styles.body}>When the EA reports an open position, it will appear here.</Text></View> : live.map((trade, index) => {
+                  const buy = trade.side !== "SELL";
+                  const knownProfit = typeof trade.profit === "number";
+                  return <View key={trade.ticket ?? index} style={styles.positionRow}>
+                    <View style={styles.positionMain}>
+                      <View style={styles.positionTop}>
+                        <View style={styles.symbolCol}><Text style={styles.positionSymbol}>{trade.symbol}</Text><Text style={[styles.sideBadge, { color: buy ? palette.green : palette.red, backgroundColor: buy ? "#0D3028" : "#351B27" }]}>{buy ? "BUY" : "SELL"}</Text></View>
+                        <Text style={[styles.tableValue, styles.volumeCol]}>{money(trade.lots)}</Text>
+                        <Text style={[styles.tableValue, styles.priceCol]}>{price(trade.open_price)}</Text>
+                        <Text style={[styles.tableValue, styles.priceCol]}>{price(trade.current_price)}</Text>
+                      </View>
+                      <View style={styles.positionFoot}>
+                        <Text style={styles.positionStops}>S/L {price(trade.sl)}   T/P {price(trade.tp)}</Text>
+                        <Text style={[styles.positionProfit, { color: knownProfit ? (trade.profit! >= 0 ? palette.green : palette.red) : palette.muted }]}>{knownProfit ? money(trade.profit, account?.account_currency) : "P/L —"}</Text>
+                      </View>
+                    </View>
+                  </View>;
+                })}
+              </>
+            )}
+            <Text style={styles.tradeReadOnly}>Read-only account snapshot · values are supplied by the connected terminal</Text>
           </View>
         ) : (
           <View>
@@ -208,6 +241,33 @@ const styles = StyleSheet.create({
   openEventsText: { color: palette.blueBright, fontSize: 9, fontWeight: "900", letterSpacing: 0.6 },
   empty: { backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border, borderRadius: 15, padding: 16 },
   emptyTitle: { color: palette.text, fontSize: 13, fontWeight: "800" },
+  tradeTerminal: { backgroundColor: "#071522", borderWidth: 1, borderColor: "#17466B", borderRadius: 16, overflow: "hidden", marginBottom: 8 },
+  tradeTerminalHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 14, borderBottomWidth: 1, borderBottomColor: "#16334A" },
+  tradeTerminalTitle: { color: palette.text, fontSize: 20, fontWeight: "900" },
+  tradeTerminalSub: { color: palette.subtle, fontSize: 7, fontWeight: "900", letterSpacing: 1, marginTop: 4 },
+  positionCount: { borderWidth: 1, borderColor: "#1D6B9B", backgroundColor: "#0B2940", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6 },
+  positionCountText: { color: palette.blueBright, fontSize: 8, fontWeight: "900" },
+  accountMetrics: { flexDirection: "row", gap: 1, backgroundColor: "#16334A" },
+  accountMetric: { flex: 1, backgroundColor: "#0A1D2D", padding: 12 },
+  accountMetricValue: { color: palette.text, fontSize: 15, fontWeight: "900", marginTop: 6 },
+  floatingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#0D2234", paddingHorizontal: 12, paddingVertical: 10 },
+  floatingLabel: { color: palette.muted, fontSize: 10, fontWeight: "700" },
+  floatingValue: { fontSize: 12, fontWeight: "900" },
+  tableHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 9, paddingVertical: 9, backgroundColor: "#102A40", gap: 3 },
+  tableHeaderText: { color: "#8FA9BE", fontSize: 6, fontWeight: "900", textAlign: "right", letterSpacing: 0.25 },
+  symbolCol: { flex: 1.15, textAlign: "left" },
+  volumeCol: { flex: 0.65 },
+  priceCol: { flex: 0.9 },
+  positionRow: { borderTopWidth: 1, borderTopColor: "#16334A", paddingHorizontal: 9, paddingVertical: 10 },
+  positionMain: { gap: 8 },
+  positionTop: { flexDirection: "row", alignItems: "center", gap: 3 },
+  positionSymbol: { color: palette.text, fontSize: 10, fontWeight: "900" },
+  sideBadge: { alignSelf: "flex-start", overflow: "hidden", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2, fontSize: 7, fontWeight: "900", marginTop: 4 },
+  tableValue: { color: "#D6E4EF", fontSize: 9, fontWeight: "700", textAlign: "right", fontVariant: ["tabular-nums"] },
+  positionFoot: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderStyle: "dashed", borderTopColor: "#1A354A", paddingTop: 7 },
+  positionStops: { color: palette.subtle, fontSize: 8 },
+  positionProfit: { fontSize: 9, fontWeight: "900" },
+  tradeReadOnly: { color: palette.subtle, fontSize: 8, lineHeight: 13, paddingHorizontal: 12, paddingVertical: 10 },
   tradeCard: { backgroundColor: palette.surface, borderWidth: 1, borderColor: palette.border, borderRadius: 14, padding: 14, marginBottom: 9 },
   tradeTitle: { color: palette.text, fontSize: 13, fontWeight: "900" },
   tradeLots: { color: palette.muted, fontSize: 9, fontWeight: "800" },
