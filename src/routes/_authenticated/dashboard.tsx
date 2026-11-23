@@ -63,7 +63,7 @@ function DashboardLoading() {
 const money = (n: number, currency: string | null) => {
   const formatted = n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (!currency || !/^[A-Z]{3}$/.test(currency)) return formatted;
-  try { return new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "code" }).format(n); }
+  try { return new Intl.NumberFormat("en-ZA", { style: "currency", currency, currencyDisplay: "symbol" }).format(n); }
   catch { return `${formatted} ${currency}`; }
 };
 
