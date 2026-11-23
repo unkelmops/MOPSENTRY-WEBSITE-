@@ -223,15 +223,15 @@ function Control() {
 
 function Section({ title, value, children }: { title: string; value?: string; children: React.ReactNode }) {
   return (
-    <details className="group rounded-xl border bg-card">
+    <details className="group overflow-hidden rounded-2xl border border-sky-300/15 bg-gradient-to-br from-card via-card to-slate-900/40 shadow-[0_10px_35px_-28px_rgba(56,189,248,.55)] transition-colors open:border-sky-300/35">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm [&::-webkit-details-marker]:hidden">
-        <span className="font-medium">{title}</span>
+        <span className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-gradient-to-br from-cyan-300 to-violet-400 shadow-[0_0_12px_rgba(56,189,248,.65)]" /><span className="font-semibold">{title}</span></span>
         <span className="flex items-center gap-2 text-muted-foreground">
-          {value && <span className="num text-primary">{value}</span>}
-          <span className="text-xs transition-transform group-open:rotate-180">⌄</span>
+          {value && <span className="num rounded-lg border border-sky-300/20 bg-sky-300/10 px-2.5 py-1 text-xs font-semibold text-sky-200">{value}</span>}
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-sky-300/10 text-sky-200 transition-transform group-open:rotate-180">⌄</span>
         </span>
       </summary>
-      <div className="border-t px-4 pb-4 pt-3">{children}</div>
+      <div className="border-t border-sky-300/15 bg-gradient-to-br from-sky-400/[0.04] to-violet-400/[0.03] px-4 pb-4 pt-3">{children}</div>
     </details>
   );
 }
