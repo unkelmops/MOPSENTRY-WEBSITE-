@@ -254,46 +254,11 @@ function Dashboard() {
             </span>
           </span>
         </Link>
-      )}<section className="relative isolate overflow-hidden rounded-2xl border bg-card shadow-glow before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/70 before:to-transparent">
-        <div className="flex items-start justify-between gap-4 p-5 pb-3">
-          <div>
-            <p className="text-sm text-muted-foreground">Account equity</p>
-            <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{displayMoney(equity)}</p>
-            <p className={cn("num mt-2 flex items-center gap-1.5 text-sm font-medium", floatingPnl == null ? "text-muted-foreground" : floatingPnl >= 0 ? "text-profit" : "text-loss")}>
-              <TrendingUp className="h-4 w-4" />
-              {floatingPnl == null ? "—" : `${floatingPnl >= 0 ? "+" : ""}${displayMoney(floatingPnl)}`} <span className="font-normal text-muted-foreground">floating P/L</span>
-            </p>
-          </div>
-          <div className={cn("shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium", fresh ? "border-primary/30 bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
-            {fresh ? "LIVE" : connectionLabel === "Connection stale" ? "STALE" : connectionLabel === "Disconnected" ? "OFFLINE" : "WAITING"}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 px-5 pb-4">
-          <div className="rounded-xl bg-muted/40 p-3"><p className="text-xs text-muted-foreground">Balance</p><p className="num mt-1 font-semibold">{displayMoney(balance)}</p></div>
-          <div className="rounded-xl bg-muted/40 p-3"><p className="text-xs text-muted-foreground">Open positions</p><p className="num mt-1 font-semibold">{fresh ? rawTrades.length : "—"}</p></div>
-        </div>
-        <div className="border-t border-border/70 px-5 py-3">
-          <div className="mb-3 flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Trade</p><span className="text-[11px] text-muted-foreground">{fresh ? `${rawTrades.length} open` : "Waiting for MT5"}</span></div>
-          {fresh && rawTrades.length > 0 ? <div className="overflow-x-auto">
-            <div className="min-w-[620px]">
-              <div className="grid grid-cols-[1.15fr_.55fr_1fr_1fr_.8fr_.8fr_.9fr] gap-2 border-b border-border/60 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><span>Symbol / Type</span><span>Lots</span><span>Open price</span><span>Current</span><span>S/L</span><span>T/P</span><span className="text-right">P/L</span></div>
-              {rawTrades.map((trade, index) => {
-                const side = String(trade["side"] ?? trade["type"] ?? "BUY").toUpperCase();
-                const pnl = Number(trade["profit"] ?? trade["pnl"] ?? 0);
-                return <div key={String(trade["ticket"] ?? index)} className="grid grid-cols-[1.15fr_.55fr_1fr_1fr_.8fr_.8fr_.9fr] items-center gap-2 border-b border-border/40 py-3 text-xs last:border-0">
-                  <span><span className="block font-semibold">{String(trade["symbol"] ?? trade["pair"] ?? "—")}</span><span className={cn("mt-0.5 inline-block text-[9px] font-bold", side.includes("SELL") ? "text-loss" : "text-profit")}>{side}</span></span>
-                  <span className="num">{Number(trade["lots"] ?? trade["volume"] ?? 0).toFixed(2)}</span>
-                  <span className="num">{String(trade["open_price"] ?? trade["open"] ?? "—")}</span>
-                  <span className="num">{String(trade["current_price"] ?? trade["current"] ?? "—")}</span>
-                  <span className="num">{String(trade["sl"] ?? trade["stop_loss"] ?? "—")}</span>
-                  <span className="num">{String(trade["tp"] ?? trade["take_profit"] ?? "—")}</span>
-                  <span className={cn("num text-right font-semibold", pnl >= 0 ? "text-profit" : "text-loss")}>{displayMoney(pnl)}</span>
-                </div>;
-              })}
-            </div>
-          </div> : <p className="py-2 text-xs text-muted-foreground">{fresh ? "No open positions on this account." : "Live trade details will appear here when MT5 reconnects."}</p>}
-        </div>
+      )}<section className="relative isolate overflow-hidden rounded-xl border border-primary/30 bg-[#081321] shadow-glow">
+        <div className="flex items-center justify-between border-b border-[#20364e] px-4 py-3"><div><p className="text-sm font-bold tracking-wide text-white">TRADE</p><p className="text-[10px] uppercase tracking-wider text-slate-400">MOPSENTRY · MT5 TERMINAL</p></div><span className={cn("rounded-md px-2 py-1 text-[10px] font-bold tracking-wider",fresh?"bg-emerald-400/10 text-emerald-400":"bg-slate-500/15 text-slate-400")}>{fresh?"CONNECTED":"OFFLINE"}</span></div>
+        <div className="grid grid-cols-3 divide-x divide-[#20364e] border-b border-[#20364e]">{[["BALANCE",displayMoney(balance)],["EQUITY",displayMoney(equity)],["FLOATING P/L",floatingPnl==null?"—":`${floatingPnl>=0?"+":""}${displayMoney(floatingPnl)}`]].map(([label,value],i)=><div key={label} className="px-3 py-3"><p className="text-[10px] uppercase text-slate-400">{label}</p><p className={cn("num mt-1 text-sm font-semibold",i===2&&floatingPnl!=null?(floatingPnl>=0?"text-emerald-400":"text-rose-400"):"text-white")}>{value}</p></div>)}</div>
+        <div className="flex items-center justify-between px-4 py-3"><p className="text-xs font-semibold text-white">POSITIONS</p><span className="rounded-full bg-[#18314a] px-2.5 py-1 text-[10px] font-bold text-sky-300">{fresh?rawTrades.length:"—"} OPEN</span></div>
+        {fresh&&rawTrades.length>0?<div className="overflow-x-auto px-3 pb-3"><div className="min-w-[650px]"><div className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] gap-2 border-y border-[#20364e] bg-[#0d1d2e] px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-slate-400"><span>Symbol</span><span>Volume</span><span>Price</span><span>Market</span><span>S/L</span><span>T/P</span><span className="text-right">Profit</span></div>{rawTrades.map((trade,index)=>{const side=String(trade["side"]??trade["type"]??"BUY").toUpperCase();const pnl=Number(trade["profit"]??trade["pnl"]??0);return <div key={String(trade["ticket"]??index)} className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] items-center gap-2 border-b border-[#20364e]/70 px-2 py-3 text-[11px] text-slate-200 last:border-0"><span><span className="block font-semibold text-white">{String(trade["symbol"]??trade["pair"]??"—")}</span><span className={cn("text-[9px] font-bold",side.includes("SELL")?"text-rose-400":"text-emerald-400")}>{side}</span></span><span className="num">{Number(trade["lots"]??trade["volume"]??0).toFixed(2)}</span><span className="num">{String(trade["open_price"]??trade["open"]??"—")}</span><span className="num">{String(trade["current_price"]??trade["current"]??"—")}</span><span className="num">{String(trade["sl"]??trade["stop_loss"]??"—")}</span><span className="num">{String(trade["tp"]??trade["take_profit"]??"—")}</span><span className={cn("num text-right font-semibold",pnl>=0?"text-emerald-400":"text-rose-400")}>{displayMoney(pnl)}</span></div>})}</div></div>:<p className="px-4 pb-4 text-xs text-slate-400">{fresh?"No open positions.":"Live positions appear here when MT5 reconnects."}</p>}
       </section>
 
       <section className="rounded-2xl border border-primary/25 bg-card p-5 shadow-glow" aria-label="Break-even protection">
