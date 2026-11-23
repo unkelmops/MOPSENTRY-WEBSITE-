@@ -28,6 +28,7 @@ import type { Trade } from "@/lib/demo-data";
 import { supabase } from "@/integrations/supabase/client";
 import { robotSettingsQuery } from "@/lib/robot-settings";
 import { tradingAccountQuery } from "@/lib/trading-account";
+import { saveRobotSettings } from "@/lib/robot-settings";
 import { cn } from "@/lib/utils";
 import { loadMarketSnapshot, type MarketQuote, type MarketCandle, type MarketFeedHealth } from "@/lib/market-data";
 
@@ -59,8 +60,12 @@ function DashboardLoading() {
   );
 }
 
-const money = (n: number) =>
-  n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+const money = (n: number, currency: string | null) => {
+  const formatted = n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (!currency || !/^[A-Z]{3}$/.test(currency)) return formatted;
+  try { return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(n); }
+  catch { return `${formatted} ${currency}`; }
+};
 
 
 function OverviewMarketPanel() {
@@ -163,6 +168,17 @@ function Dashboard() {
   const { data: s } = useSuspenseQuery(robotSettingsQuery);
   const { data: ta } = useSuspenseQuery(tradingAccountQuery);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
+  const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
+  const breakEvenSave = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const trigger = Number(breakEvenTrigger);
+      if (!Number.isFinite(trigger) || trigger <= 0) throw new Error("Enter a profit threshold greater than zero.");
+      await saveRobotSettings({ break_even_enabled: enabled, break_even_trigger: trigger });
+    },
+    onSuccess: () => { toast.success("Break-even settings saved."); void qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey }); },
+    onError: (error: Error) => toast.error(error.message || "Could not save break-even settings."),
+  });
 
   // Supabase realtime makes the screen react to a new EA check-in immediately.
   // The two-second query polling remains as a fallback.
@@ -302,10 +318,10 @@ function Dashboard() {
         <div className="flex items-start justify-between gap-4 p-5 pb-3">
           <div>
             <p className="text-sm text-muted-foreground">Account equity</p>
-            <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{equity == null ? "—" : money(equity)}</p>
+            <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{equity == null ? "—" : money(equity, accountCurrency)}</p>
             <p className={cn("num mt-2 flex items-center gap-1.5 text-sm font-medium", floatingPnl == null ? "text-muted-foreground" : floatingPnl >= 0 ? "text-profit" : "text-loss")}>
               <TrendingUp className="h-4 w-4" />
-              {floatingPnl == null ? "—" : `${floatingPnl >= 0 ? "+" : ""}${money(floatingPnl)}`} <span className="font-normal text-muted-foreground">floating P/L</span>
+              {floatingPnl == null ? "—" : `${floatingPnl >= 0 ? "+" : ""}${money(floatingPnl, accountCurrency)}`} <span className="font-normal text-muted-foreground">floating P/L</span>
             </p>
           </div>
           <div className={cn("shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium", fresh ? "border-primary/30 bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
@@ -316,7 +332,7 @@ function Dashboard() {
         <div className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2">
           <div className="rounded-xl bg-muted/40 p-3">
             <p className="text-xs text-muted-foreground">Balance</p>
-            <p className="num mt-1 font-semibold">{balance == null ? "—" : money(balance)}</p>
+            <p className="num mt-1 font-semibold">{balance == null ? "—" : money(balance, accountCurrency)}</p>
           </div>
           <div className="rounded-xl bg-muted/40 p-3">
             <p className="text-xs text-muted-foreground">Open positions</p>
@@ -341,6 +357,26 @@ function Dashboard() {
             {ta.last_heartbeat ? "Account snapshot is stale. Reconnect the EA to refresh live telemetry." : "Waiting for the first MT5 check-in. Live equity history will appear only after real history is collected."}
           </div>
         )}
+      </section>
+
+      <section className="rounded-2xl border border-primary/25 bg-card p-5 shadow-glow" aria-label="Break-even protection">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold">Break-Even Protection</p>
+            <p className="mt-1 text-xs text-muted-foreground">When combined floating profit across all open positions reaches your target, the EA can move eligible positions' stop-losses to their entry prices.</p>
+          </div>
+          <Button size="sm" variant={s.break_even_enabled ? "default" : "outline"} disabled={breakEvenSave.isPending} onClick={() => breakEvenSave.mutate(!s.break_even_enabled)}>
+            {breakEvenSave.isPending ? "Saving…" : s.break_even_enabled ? "ON" : "OFF"}
+          </Button>
+        </div>
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <label className="min-w-[180px] flex-1 text-xs text-muted-foreground">
+            Combined floating-profit trigger {accountCurrency ? `(${accountCurrency})` : "(account currency)"}
+            <input type="number" min="0.01" step="0.01" value={breakEvenTrigger} onChange={(event) => setBreakEvenTrigger(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground" />
+          </label>
+          <Button variant="secondary" size="sm" disabled={breakEvenSave.isPending} onClick={() => breakEvenSave.mutate(s.break_even_enabled)}>Save threshold</Button>
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">Account currency: {accountCurrency ?? "waiting for MT5 currency data"}. This setting is saved to your account; EA-side execution requires an EA build that reads the new settings.</p>
       </section>
 
       <Link
@@ -393,7 +429,7 @@ function Dashboard() {
                   </p>
                 </div>
                 <p className={cn("num shrink-0 font-semibold", t.pnl >= 0 ? "text-profit" : "text-loss")}>
-                  {t.pnl >= 0 ? "+" : ""}{money(t.pnl)}
+                  {t.pnl >= 0 ? "+" : ""}{money(t.pnl, accountCurrency)}
                 </p>
               </div>
             ))
