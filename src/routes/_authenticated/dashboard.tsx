@@ -63,7 +63,7 @@ function DashboardLoading() {
 const money = (n: number, currency: string | null) => {
   const formatted = n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (!currency || !/^[A-Z]{3}$/.test(currency)) return formatted;
-  try { return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(n); }
+  try { return new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "code" }).format(n); }
   catch { return `${formatted} ${currency}`; }
 };
 
@@ -94,6 +94,7 @@ function Dashboard() {
   const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const [savedBreakEvenTrigger, setSavedBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const [displayCurrency, setDisplayCurrency] = useState("ZAR");
+  useEffect(() => { const sync = () => { try { const saved = localStorage.getItem("mopsentry-currency"); if (saved && /^[A-Z]{3}$/.test(saved)) setDisplayCurrency(saved); } catch { /* optional storage */ } }; sync(); window.addEventListener("mopsentry-currency-change", sync); return () => window.removeEventListener("mopsentry-currency-change", sync); }, []);
   const [conversionRate, setConversionRate] = useState<number | null>(null);
   const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
   useEffect(() => {
@@ -283,13 +284,6 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="mx-5 mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
-          <span className="text-xs font-semibold text-muted-foreground">DISPLAY CURRENCY</span>
-          <select aria-label="Display currency" value={displayCurrency} onChange={(event) => setDisplayCurrency(event.target.value)} className="h-8 rounded-lg border border-primary/25 bg-background px-2 text-xs font-semibold text-foreground">
-            <option value="ZAR">ZAR · Rand</option><option value="USD">USD · Dollar</option><option value="EUR">EUR · Euro</option><option value="GBP">GBP · Pound</option><option value="AUD">AUD · Dollar</option><option value="CAD">CAD · Dollar</option>
-          </select>
-          <span className="text-[11px] text-muted-foreground">{!accountCurrency ? "Waiting for MT5 to report its account currency" : accountCurrency === displayCurrency ? `Source currency: ${accountCurrency} · unchanged` : conversionRate == null ? `Showing original ${accountCurrency} values until a rate is available` : `Approx. converted from ${accountCurrency} · rate ${conversionRate.toFixed(4)}`}</span>
-        </div>
         <div className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2">
           <div className="rounded-xl bg-muted/40 p-3">
             <p className="text-xs text-muted-foreground">Balance</p>
@@ -301,23 +295,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {fresh ? (
-          <div className="border-t px-5 py-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-lg bg-muted p-2"><Activity className="h-4 w-4 text-muted-foreground" /></div>
-              <div>
-                <p className="text-sm font-medium">Equity history</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  This is the latest MT5 equity snapshot. Historical points are not being stored yet, so no fabricated trend line is shown.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="border-t px-5 py-4 text-sm text-muted-foreground">
-            {ta.last_heartbeat ? "Account snapshot is stale. Reconnect the EA to refresh live telemetry." : "Waiting for the first MT5 check-in. Live equity history will appear only after real history is collected."}
-          </div>
-        )}
       </section>
 
       <section className="rounded-2xl border border-primary/25 bg-card p-5 shadow-glow" aria-label="Break-even protection">
