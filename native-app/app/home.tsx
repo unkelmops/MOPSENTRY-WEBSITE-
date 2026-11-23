@@ -213,6 +213,28 @@ export default function HomeScreen() {
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}><Text style={{ color: "#C7D8EA", fontSize: 10, fontWeight: "900", letterSpacing: 1 }}>PENDING ORDERS</Text><Text style={{ color: "#B7A0FF", fontSize: 9, fontWeight: "900" }}>{connected ? records(account?.pending_orders).length : "—"} WAITING</Text></View>
             {connected && records(account?.pending_orders).length ? records(account?.pending_orders).map((order,index)=><View key={String(order.ticket??index)} style={{ borderTopWidth: 1, borderTopColor: "#20364e", paddingVertical: 9, flexDirection: "row", justifyContent: "space-between", gap: 10 }}><View><Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: 12 }}>{String(order.symbol??"—")}</Text><Text style={{ color: "#B7A0FF", fontSize: 9, marginTop: 3 }}>{String(order.type??"PENDING").replaceAll("_"," ")} · {Number(order.volume??0).toFixed(2)} lots</Text><Text style={{ color: "#8FA3BA", fontSize: 9, marginTop: 3 }}>SL {displayValue(order.sl)} · TP {displayValue(order.tp)}</Text></View><Text style={{ color: "#E6EEF8", fontSize: 11, fontWeight: "700" }}>@ {displayValue(order.entry_price)}</Text></View>) : <Text style={{ color: "#8FA3BA", fontSize: 10, paddingVertical: 6 }}>{connected ? "No pending orders." : "Pending orders appear when MT5 reconnects."}</Text>}
           </View>
+          <Pressable onPress={() => {
+            const positions = records(account?.open_trades);
+            if (!connected || account?.ea_version !== "1.73" || positions.length === 0) {
+              Alert.alert("Close All unavailable", !connected ? "Reconnect MT5 first." : account?.ea_version !== "1.73" ? "Update to MOPSENTRY EA v1.73 first." : "There are no open positions.");
+              return;
+            }
+            Alert.alert("Close all MOPSENTRY positions?", "This sends a Close All command to the connected MT5 EA.", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Confirm", style: "destructive", onPress: async () => {
+                const { data: auth } = await supabase.auth.getUser();
+                if (!auth.user) { Alert.alert("Sign in required", "Please sign in again."); return; }
+                const { data: existing, error: checkError } = await supabase.from("robot_commands").select("id").eq("user_id", auth.user.id).eq("status", "pending").limit(1).maybeSingle();
+                if (checkError) { Alert.alert("Could not send command", checkError.message); return; }
+                if (existing) { Alert.alert("Command pending", "Wait for the current MT5 command to be acknowledged."); return; }
+                const { error: insertError } = await supabase.from("robot_commands").insert({ user_id: auth.user.id, command: "CLOSE_ALL", status: "pending" });
+                if (insertError) Alert.alert("Could not send command", insertError.message);
+                else Alert.alert("Command sent", "Close All is waiting for MT5 to receive it.");
+              }}
+            ]);
+          }} style={{ marginHorizontal: 12, marginBottom: 12, borderRadius: 11, backgroundColor: "#8F2639", paddingVertical: 12, alignItems: "center", opacity: connected && account?.ea_version === "1.73" && records(account?.open_trades).length > 0 ? 1 : 0.45 }}>
+            <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "900", letterSpacing: 1 }}>CLOSE ALL POSITIONS</Text>
+          </Pressable>
         </View>
         <Pressable onPress={() => setAccountDetailsExpanded(value => !value)} style={[styles.settingsLink, { paddingVertical: 12 }]}>
           <View style={{ flex: 1 }}><Text style={styles.controlsTitle}>Trade account connected</Text><Text style={styles.description}>{connected ? `${account?.broker_server || "MT5"} · Login ${account?.login || "—"}` : "Connection details and account status"}</Text></View><Text style={styles.controlsArrow}>{accountDetailsExpanded ? "−" : "+"}</Text>
