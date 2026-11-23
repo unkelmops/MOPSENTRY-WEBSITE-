@@ -93,6 +93,20 @@ function Dashboard() {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const [savedBreakEvenTrigger, setSavedBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
+  const [displayCurrency, setDisplayCurrency] = useState("ZAR");
+  const [conversionRate, setConversionRate] = useState<number | null>(null);
+  useEffect(() => {
+    if (!accountCurrency || !/^[A-Z]{3}$/.test(accountCurrency)) { setConversionRate(null); return; }
+    if (accountCurrency === displayCurrency) { setConversionRate(1); return; }
+    let active = true;
+    setConversionRate(null);
+    fetch(`https://open.er-api.com/v6/latest/${accountCurrency}`).then((response) => response.json()).then((data) => {
+      const rate = Number(data?.rates?.[displayCurrency]);
+      if (active) setConversionRate(Number.isFinite(rate) && rate > 0 ? rate : null);
+    }).catch(() => { if (active) setConversionRate(null); });
+    return () => { active = false; };
+  }, [accountCurrency, displayCurrency]);
+  const displayMoney = (value: number | null) => value == null ? "—" : conversionRate == null ? "Rate unavailable" : money(value * conversionRate, displayCurrency);
   const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
   const breakEvenSave = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -238,10 +252,10 @@ function Dashboard() {
         <div className="flex items-start justify-between gap-4 p-5 pb-3">
           <div>
             <p className="text-sm text-muted-foreground">Account equity</p>
-            <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{equity == null ? "—" : money(equity, accountCurrency)}</p>
+            <p className="num mt-1 text-3xl font-bold tracking-tight sm:text-4xl">{displayMoney(equity)}</p>
             <p className={cn("num mt-2 flex items-center gap-1.5 text-sm font-medium", floatingPnl == null ? "text-muted-foreground" : floatingPnl >= 0 ? "text-profit" : "text-loss")}>
               <TrendingUp className="h-4 w-4" />
-              {floatingPnl == null ? "—" : `${floatingPnl >= 0 ? "+" : ""}${money(floatingPnl, accountCurrency)}`} <span className="font-normal text-muted-foreground">floating P/L</span>
+              {floatingPnl == null ? "—" : `${floatingPnl >= 0 ? "+" : ""}${displayMoney(floatingPnl)}`} <span className="font-normal text-muted-foreground">floating P/L</span>
             </p>
           </div>
           <div className={cn("shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium", fresh ? "border-primary/30 bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
@@ -252,7 +266,7 @@ function Dashboard() {
         <div className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2">
           <div className="rounded-xl bg-muted/40 p-3">
             <p className="text-xs text-muted-foreground">Balance</p>
-            <p className="num mt-1 font-semibold">{balance == null ? "—" : money(balance, accountCurrency)}</p>
+            <p className="num mt-1 font-semibold">{displayMoney(balance)}</p>
           </div>
           <div className="rounded-xl bg-muted/40 p-3">
             <p className="text-xs text-muted-foreground">Open positions</p>
@@ -351,7 +365,7 @@ function Dashboard() {
                   </p>
                 </div>
                 <p className={cn("num shrink-0 font-semibold", t.pnl >= 0 ? "text-profit" : "text-loss")}>
-                  {t.pnl >= 0 ? "+" : ""}{money(t.pnl, accountCurrency)}
+                  {t.pnl >= 0 ? "+" : ""}{displayMoney(t.pnl)}
                 </p>
               </div>
             ))
