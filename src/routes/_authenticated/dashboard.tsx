@@ -97,17 +97,37 @@ function Dashboard() {
   const [conversionRate, setConversionRate] = useState<number | null>(null);
   const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
   useEffect(() => {
-    if (!accountCurrency || !/^[A-Z]{3}$/.test(accountCurrency)) { setConversionRate(null); return; }
-    if (accountCurrency === displayCurrency) { setConversionRate(1); return; }
     let active = true;
-    setConversionRate(null);
-    fetch(`https://open.er-api.com/v6/latest/${accountCurrency}`).then((response) => response.json()).then((data) => {
-      const rate = Number(data?.rates?.[displayCurrency]);
-      if (active) setConversionRate(Number.isFinite(rate) && rate > 0 ? rate : null);
-    }).catch(() => { if (active) setConversionRate(null); });
+    const loadRate = async () => {
+      if (!accountCurrency || !/^[A-Z]{3}$/.test(accountCurrency)) { setConversionRate(null); return; }
+      if (accountCurrency === displayCurrency) { setConversionRate(1); return; }
+      setConversionRate(null);
+      try {
+        const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${accountCurrency}&symbols=${displayCurrency}`);
+        if (response.ok) {
+          const data = await response.json();
+          const rate = Number(data?.rates?.[displayCurrency]);
+          if (Number.isFinite(rate) && rate > 0) { if (active) setConversionRate(rate); return; }
+        }
+      } catch { /* fallback below */ }
+      try {
+        const response = await fetch(`https://open.er-api.com/v6/latest/${accountCurrency}`);
+        if (!response.ok) throw new Error("FX provider unavailable");
+        const data = await response.json();
+        const rate = Number(data?.rates?.[displayCurrency]);
+        if (!Number.isFinite(rate) || rate <= 0) throw new Error("FX rate missing");
+        if (active) setConversionRate(rate);
+      } catch { if (active) setConversionRate(null); }
+    };
+    void loadRate();
     return () => { active = false; };
   }, [accountCurrency, displayCurrency]);
-  const displayMoney = (value: number | null) => value == null ? "—" : conversionRate == null ? "Rate unavailable" : money(value * conversionRate, displayCurrency);
+  const displayMoney = (value: number | null) => {
+    if (value == null) return "—";
+    if (!accountCurrency) return money(value, null);
+    if (conversionRate == null) return money(value, accountCurrency);
+    return money(value * conversionRate, displayCurrency);
+  };
   const breakEvenSave = useMutation({
     mutationFn: async (enabled: boolean) => {
       const trigger = Number(breakEvenTrigger);
@@ -263,6 +283,13 @@ function Dashboard() {
           </div>
         </div>
 
+        <div className="mx-5 mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
+          <span className="text-xs font-semibold text-muted-foreground">DISPLAY CURRENCY</span>
+          <select aria-label="Display currency" value={displayCurrency} onChange={(event) => setDisplayCurrency(event.target.value)} className="h-8 rounded-lg border border-primary/25 bg-background px-2 text-xs font-semibold text-foreground">
+            <option value="ZAR">ZAR · Rand</option><option value="USD">USD · Dollar</option><option value="EUR">EUR · Euro</option><option value="GBP">GBP · Pound</option><option value="AUD">AUD · Dollar</option><option value="CAD">CAD · Dollar</option>
+          </select>
+          <span className="text-[11px] text-muted-foreground">{!accountCurrency ? "Waiting for MT5 to report its account currency" : accountCurrency === displayCurrency ? `Source currency: ${accountCurrency} · unchanged` : conversionRate == null ? `Showing original ${accountCurrency} values until a rate is available` : `Approx. converted from ${accountCurrency} · rate ${conversionRate.toFixed(4)}`}</span>
+        </div>
         <div className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2">
           <div className="rounded-xl bg-muted/40 p-3">
             <p className="text-xs text-muted-foreground">Balance</p>
@@ -340,8 +367,13 @@ function Dashboard() {
         </div>
       )}
 
-      <details className="group rounded-xl border bg-card">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm [&::-webkit-details-marker]:hidden"><span className="font-semibold">Open positions</span><span className="text-xs text-muted-foreground">{fresh ? rawTrades.length : "—"} · Tap to view</span></summary>
+      <details className="group relative isolate overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-br from-cyan-500/[0.10] via-card to-blue-500/[0.04] shadow-[0_8px_30px_-18px_rgba(34,211,238,0.45)] transition-all duration-300 open:border-cyan-400/50 open:shadow-[0_12px_36px_-16px_rgba(34,211,238,0.28)]">
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-cyan-300/25 bg-cyan-400/10 text-xl text-cyan-300 shadow-inner">↗</span>
+          <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">LIVE EXPOSURE</span><span className="mt-0.5 block font-semibold">Open positions</span><span className="mt-0.5 block text-xs text-muted-foreground">Your active market positions</span></span>
+          <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-bold tabular-nums text-cyan-200">{fresh ? rawTrades.length : "—"} <span className="font-medium opacity-70">OPEN</span></span>
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-cyan-400/10 text-cyan-200 transition-transform duration-300 group-open:rotate-180">⌄</span>
+        </summary>
         <div className="border-t p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="font-semibold">Open positions</h2>
@@ -379,8 +411,13 @@ function Dashboard() {
         </div>
       </details>
 
-      <details className="group rounded-xl border bg-card">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm [&::-webkit-details-marker]:hidden"><span className="font-semibold">Pending orders</span><span className="text-xs text-muted-foreground">{fresh ? pendingOrders.length : "—"} · Tap to view</span></summary>
+      <details className="group relative isolate overflow-hidden rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-500/[0.10] via-card to-fuchsia-500/[0.04] shadow-[0_8px_30px_-18px_rgba(167,139,250,0.45)] transition-all duration-300 open:border-violet-400/50 open:shadow-[0_12px_36px_-16px_rgba(167,139,250,0.28)]">
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-300/25 bg-violet-400/10 text-xl text-violet-300 shadow-inner">⌁</span>
+          <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300/80">EXECUTION QUEUE</span><span className="mt-0.5 block font-semibold">Pending orders</span><span className="mt-0.5 block text-xs text-muted-foreground">Orders waiting for activation</span></span>
+          <span className="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1.5 text-xs font-bold tabular-nums text-violet-200">{fresh ? pendingOrders.length : "—"} <span className="font-medium opacity-70">WAITING</span></span>
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-400/10 text-violet-200 transition-transform duration-300 group-open:rotate-180">⌄</span>
+        </summary>
         <div className="border-t p-4">
         <div className="space-y-2">
           {pendingOrders.length === 0 ? (
