@@ -181,7 +181,7 @@ export default function HomeScreen() {
     const base = account?.account_currency?.toUpperCase();
     const currency = conversionRate == null ? base : displayCurrency;
     const converted = conversionRate == null ? value : value * conversionRate;
-    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: currency && /^[A-Z]{3}$/.test(currency) ? currency : "ZAR", currencyDisplay: "code" }).format(converted); }
+    try { return new Intl.NumberFormat("en-ZA", { style: "currency", currency: currency && /^[A-Z]{3}$/.test(currency) ? currency : "ZAR", currencyDisplay: "symbol" }).format(converted); }
     catch { return `${converted.toFixed(2)} ${currency || "MT5"}`; }
   };
 
