@@ -7,6 +7,10 @@ const themes = [
   { id: "blue", label: "Blue", swatch: "bg-theme-blue" },
   { id: "black", label: "Black", swatch: "bg-theme-black" },
   { id: "yellow", label: "Yellow", swatch: "bg-theme-yellow" },
+  { id: "purple", label: "Purple", swatch: "bg-theme-purple" },
+  { id: "green", label: "Green", swatch: "bg-theme-green" },
+  { id: "cyan", label: "Cyan", swatch: "bg-theme-cyan" },
+  { id: "orange", label: "Orange", swatch: "bg-theme-orange" },
 ] as const;
 type Theme = typeof themes[number]["id"];
 const ThemeContext = createContext<{ theme: Theme; select: (theme: Theme) => void }>({ theme: "graphite", select: () => {} });
