@@ -44,11 +44,18 @@ function money(value: number | null, currency: string | null) {
 function DataList({ title, value }: { title: string; value: unknown }) {
   const [expanded, setExpanded] = useState(false);
   const items = records(value);
+  const pending = title.toLowerCase().includes("pending");
   return (
-    <View style={styles.card}>
-      <Pressable onPress={() => setExpanded(current => !current)} style={styles.sectionHeader} accessibilityRole="button" accessibilityState={{ expanded }}>
-        <Text style={styles.cardLabel}>{title}</Text>
-        <Text style={styles.count}>{items.length}  {expanded ? "⌃" : "⌄"}</Text>
+    <View style={[styles.folderCard, pending ? styles.pendingFolder : styles.positionsFolder]}>
+      <Pressable onPress={() => setExpanded(current => !current)} style={styles.folderHeader} accessibilityRole="button" accessibilityState={{ expanded }}>
+        <View style={[styles.folderIcon, pending ? styles.pendingIcon : styles.positionsIcon]}><Text style={styles.folderGlyph}>{pending ? "⌁" : "↗"}</Text></View>
+        <View style={styles.folderCopy}>
+          <Text style={[styles.folderEyebrow, pending ? styles.pendingAccent : styles.positionsAccent]}>{pending ? "EXECUTION QUEUE" : "LIVE EXPOSURE"}</Text>
+          <Text style={styles.folderTitle}>{title}</Text>
+          <Text style={styles.folderSubtitle}>{pending ? "Orders waiting for activation" : "Your active market positions"}</Text>
+        </View>
+        <View style={[styles.folderCount, pending ? styles.pendingCount : styles.positionsCount]}><Text style={[styles.folderCountNumber, pending ? styles.pendingAccent : styles.positionsAccent]}>{items.length}</Text><Text style={styles.folderCountLabel}>{pending ? "WAITING" : "OPEN"}</Text></View>
+        <View style={[styles.folderChevron, pending ? styles.pendingChevron : styles.positionsChevron]}><Text style={styles.folderChevronText}>{expanded ? "−" : "+"}</Text></View>
       </Pressable>
       {expanded ? items.length === 0 ? (
         <Text style={styles.muted}>No {title.toLowerCase()} reported by the EA.</Text>
@@ -136,22 +143,39 @@ export default function HomeScreen() {
   const heartbeat = account?.last_heartbeat ? new Date(account.last_heartbeat).getTime() : 0;
   const connected = account?.status === "connected" && Number.isFinite(heartbeat) && Date.now() - heartbeat >= 0 && Date.now() - heartbeat < 30000;
   useEffect(() => {
-    const base = account?.account_currency?.toUpperCase();
-    if (!base || !/^[A-Z]{3}$/.test(base) || base === displayCurrency) { setConversionRate(base === displayCurrency ? 1 : null); return; }
     let active = true;
-    setConversionRate(null);
-    fetch(`https://open.er-api.com/v6/latest/${base}`).then(response => response.json()).then(data => {
-      const rate = Number(data?.rates?.[displayCurrency]);
-      if (active) setConversionRate(Number.isFinite(rate) && rate > 0 ? rate : null);
-    }).catch(() => { if (active) setConversionRate(null); });
+    const loadRate = async () => {
+      const base = account?.account_currency?.toUpperCase();
+      if (!base || !/^[A-Z]{3}$/.test(base)) { setConversionRate(null); return; }
+      if (base === displayCurrency) { setConversionRate(1); return; }
+      setConversionRate(null);
+      try {
+        const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${base}&symbols=${displayCurrency}`);
+        if (response.ok) {
+          const data = await response.json();
+          const rate = Number(data?.rates?.[displayCurrency]);
+          if (Number.isFinite(rate) && rate > 0) { if (active) setConversionRate(rate); return; }
+        }
+      } catch { /* fallback provider below */ }
+      try {
+        const response = await fetch(`https://open.er-api.com/v6/latest/${base}`);
+        if (!response.ok) throw new Error("FX provider unavailable");
+        const data = await response.json();
+        const rate = Number(data?.rates?.[displayCurrency]);
+        if (!Number.isFinite(rate) || rate <= 0) throw new Error("FX rate missing");
+        if (active) setConversionRate(rate);
+      } catch { if (active) setConversionRate(null); }
+    };
+    void loadRate();
     return () => { active = false; };
   }, [account?.account_currency, displayCurrency]);
   const displayMoney = (value: number | null) => {
     if (value == null) return "—";
-    if (conversionRate == null) return "Rate unavailable";
-    const converted = value * conversionRate;
-    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: displayCurrency }).format(converted); }
-    catch { return `${converted.toFixed(2)} ${displayCurrency}`; }
+    const base = account?.account_currency?.toUpperCase();
+    const currency = conversionRate == null ? base : displayCurrency;
+    const converted = conversionRate == null ? value : value * conversionRate;
+    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: currency && /^[A-Z]{3}$/.test(currency) ? currency : "ZAR" }).format(converted); }
+    catch { return `${converted.toFixed(2)} ${currency || "MT5"}`; }
   };
 
   if (loading) {
@@ -183,7 +207,7 @@ export default function HomeScreen() {
             <Text style={styles.description}>MT5 account currency: {account.account_currency || "Waiting for MT5 currency data"}</Text>
             <Text style={styles.fieldLabel}>DISPLAY CURRENCY</Text>
             <View style={styles.currencyRow}>{["ZAR", "USD", "EUR", "GBP"].map(code => <Pressable key={code} onPress={() => setDisplayCurrency(code)} style={[styles.currencyButton, displayCurrency === code && styles.currencyActive]}><Text style={[styles.currencyText, displayCurrency === code && styles.currencyTextActive]}>{code}</Text></Pressable>)}</View>
-            <Text style={styles.description}>Converted display only · {conversionRate == null ? "Exchange rate unavailable" : `Rate ${conversionRate.toFixed(4)} from ${account.account_currency} to ${displayCurrency}`}</Text>
+            <Text style={styles.description}>{!account.account_currency ? "Waiting for MT5 to report account currency." : account.account_currency === displayCurrency ? `Source currency ${account.account_currency} · no conversion needed.` : conversionRate == null ? `Showing original ${account.account_currency} values until an exchange rate is available.` : `Approx. converted from ${account.account_currency} · rate ${conversionRate.toFixed(4)}.`}</Text>
             <Text style={styles.description}>EA state: {account.ea_state || "Not reported"} · Version: {account.ea_version || "—"}</Text>
             <Text style={styles.description}>Last EA heartbeat: {account.last_heartbeat ? new Date(account.last_heartbeat).toLocaleString() : "Not received"}</Text>
           </> : <Text style={styles.description}>No MT5 account has been linked to this user yet. Account details will appear after the EA connects.</Text>}
@@ -272,6 +296,29 @@ const styles = StyleSheet.create({
   dotOn: { backgroundColor: palette.green },
   dotOff: { backgroundColor: palette.subtle },
   statusText: { color: "#b7c9dc", fontSize: 9, fontWeight: "800", letterSpacing: 0.6 },
+  folderCard: { borderWidth: 1, borderRadius: 20, padding: 14, marginBottom: 13, overflow: "hidden" },
+  positionsFolder: { borderColor: "#1A91B8", backgroundColor: "#0A2130" },
+  pendingFolder: { borderColor: "#7655B8", backgroundColor: "#1A1730" },
+  folderHeader: { flexDirection: "row", alignItems: "center", gap: 11 },
+  folderIcon: { width: 46, height: 46, borderRadius: 15, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  positionsIcon: { backgroundColor: "#123B4C", borderColor: "#287E9D" },
+  pendingIcon: { backgroundColor: "#30254C", borderColor: "#7255A8" },
+  folderGlyph: { fontSize: 24, fontWeight: "800", color: "#D9F5FF" },
+  folderCopy: { flex: 1, minWidth: 0 },
+  folderEyebrow: { fontSize: 8, letterSpacing: 1.5, fontWeight: "900" },
+  positionsAccent: { color: "#56D5F5" },
+  pendingAccent: { color: "#C2A3FF" },
+  folderTitle: { color: palette.text, fontSize: 15, fontWeight: "900", marginTop: 3 },
+  folderSubtitle: { color: palette.muted, fontSize: 9, marginTop: 3 },
+  folderCount: { minWidth: 54, alignItems: "center", borderRadius: 12, borderWidth: 1, paddingVertical: 6, paddingHorizontal: 8 },
+  positionsCount: { backgroundColor: "#103749", borderColor: "#287E9D" },
+  pendingCount: { backgroundColor: "#30254C", borderColor: "#7255A8" },
+  folderCountNumber: { fontSize: 16, fontWeight: "900" },
+  folderCountLabel: { color: palette.muted, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 },
+  folderChevron: { width: 27, height: 27, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  positionsChevron: { backgroundColor: "#16475B" },
+  pendingChevron: { backgroundColor: "#3A2C5D" },
+  folderChevronText: { color: palette.text, fontSize: 17, fontWeight: "700", marginTop: -2 },
   card: { borderWidth: 1, borderColor: palette.border, backgroundColor: palette.surface, borderRadius: 18, padding: 18, marginBottom: 13 },
   cardLabel: { color: palette.muted, fontSize: 10, letterSpacing: 1.7, fontWeight: "800" },
   email: { color: palette.text, fontSize: 17, fontWeight: "700", marginTop: 12 },
