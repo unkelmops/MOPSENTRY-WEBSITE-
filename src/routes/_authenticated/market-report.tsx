@@ -244,7 +244,7 @@ function MarketReport() {
           </div>
           <p className="mb-3 text-xs font-medium text-report-highlight">{folder.pending}</p>
           <dl className="grid gap-3 sm:grid-cols-3">
-            {folder.metrics.map(metric => <div key={metric} className="border-l border-report-highlight/30 pl-3"><dt className="text-xs text-muted-foreground">{metric}</dt><dd className="mt-1 font-mono text-lg">{analysisMetrics[folder.id]?.[folder.metrics.indexOf(metric)] ?? "—"}</dd></div>)}
+            {folder.metrics.map(metric => <div key={metric} className="border-l border-report-highlight/30 pl-3"><dt className="text-xs text-muted-foreground">{metric}</dt><dd className="mt-1 font-mono text-lg">{analysisMetrics[folder.id]?.[(folder.metrics as readonly string[]).indexOf(metric)] ?? "—"}</dd></div>)}
           </dl>
           <p className="mt-4 max-w-3xl text-xs leading-relaxed text-muted-foreground">{analysisNotes[folder.id] ?? folder.detail}</p>
         </>}
