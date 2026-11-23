@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BrainCircuit,
-  Target,
   Clock3,
   Link2,
   Power,
@@ -68,23 +67,6 @@ const money = (n: number, currency: string | null) => {
 };
 
 
-function OverviewTradeSetup() {
-  return (
-    <section className="relative overflow-hidden rounded-2xl border border-report-highlight/30 bg-gradient-to-r from-report-highlight/10 via-card/90 to-card p-4 sm:p-5" aria-label="Trade setup preview">
-      <div className="flex items-start gap-3">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-report-highlight/30 bg-report-highlight/10 text-report-highlight"><Target className="h-5 w-5" /></div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-report-highlight">Setup watch</p><h2 className="mt-1 font-semibold">Trade Setup</h2></div>
-            <span className="rounded-full border border-border px-2.5 py-1 text-[10px] font-medium text-muted-foreground">No confirmed setup</span>
-          </div>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">Entry, stop loss and targets will appear here only when the market analysis confirms a valid setup. No levels are being guessed.</p>
-          <Link to="/market-report" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-report-highlight hover:underline">View setup analysis <ArrowUpRight className="h-3.5 w-3.5" /></Link>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 function Dashboard() {
   const qc = useQueryClient();
@@ -254,32 +236,24 @@ function Dashboard() {
             </span>
           </span>
         </Link>
-      )}<section className="relative isolate overflow-hidden rounded-xl border border-primary/30 bg-[#081321] shadow-glow">
-        <div className="flex items-center justify-between border-b border-[#20364e] px-4 py-3"><div><p className="text-sm font-bold tracking-wide text-white">TRADE</p><p className="text-[10px] uppercase tracking-wider text-slate-400">MOPSENTRY · MT5 TERMINAL</p></div><span className={cn("rounded-md px-2 py-1 text-[10px] font-bold tracking-wider",fresh?"bg-emerald-400/10 text-emerald-400":"bg-slate-500/15 text-slate-400")}>{fresh?"CONNECTED":"OFFLINE"}</span></div>
+      )}<section className="relative isolate overflow-hidden rounded-2xl border border-sky-400/30 bg-gradient-to-br from-[#071321] via-[#0b1c30] to-[#10172d] shadow-[0_18px_55px_-28px_rgba(14,165,233,.65)]">
+        <div className="flex items-center justify-between border-b border-sky-300/15 bg-gradient-to-r from-sky-400/10 via-transparent to-violet-400/10 px-4 py-3"><div><p className="text-sm font-bold tracking-[0.18em] text-white">TRADE</p><p className="text-[10px] uppercase tracking-wider text-slate-400">MOPSENTRY · MT5 TERMINAL</p></div><span className={cn("rounded-md px-2 py-1 text-[10px] font-bold tracking-wider",fresh?"bg-emerald-400/10 text-emerald-400":"bg-slate-500/15 text-slate-400")}>{fresh?"CONNECTED":"OFFLINE"}</span></div>
         <div className="grid grid-cols-3 divide-x divide-[#20364e] border-b border-[#20364e]">{[["BALANCE",displayMoney(balance)],["EQUITY",displayMoney(equity)],["FLOATING P/L",floatingPnl==null?"—":`${floatingPnl>=0?"+":""}${displayMoney(floatingPnl)}`]].map(([label,value],i)=><div key={label} className="px-3 py-3"><p className="text-[10px] uppercase text-slate-400">{label}</p><p className={cn("num mt-1 text-sm font-semibold",i===2&&floatingPnl!=null?(floatingPnl>=0?"text-emerald-400":"text-rose-400"):"text-white")}>{value}</p></div>)}</div>
         <div className="flex items-center justify-between px-4 py-3"><p className="text-xs font-semibold text-white">POSITIONS</p><span className="rounded-full bg-[#18314a] px-2.5 py-1 text-[10px] font-bold text-sky-300">{fresh?rawTrades.length:"—"} OPEN</span></div>
         {fresh&&rawTrades.length>0?<div className="overflow-x-auto px-3 pb-3"><div className="min-w-[650px]"><div className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] gap-2 border-y border-[#20364e] bg-[#0d1d2e] px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-slate-400"><span>Symbol</span><span>Volume</span><span>Price</span><span>Market</span><span>S/L</span><span>T/P</span><span className="text-right">Profit</span></div>{rawTrades.map((trade,index)=>{const side=String(trade["side"]??trade["type"]??"BUY").toUpperCase();const pnl=Number(trade["profit"]??trade["pnl"]??0);return <div key={String(trade["ticket"]??index)} className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] items-center gap-2 border-b border-[#20364e]/70 px-2 py-3 text-[11px] text-slate-200 last:border-0"><span><span className="block font-semibold text-white">{String(trade["symbol"]??trade["pair"]??"—")}</span><span className={cn("text-[9px] font-bold",side.includes("SELL")?"text-rose-400":"text-emerald-400")}>{side}</span></span><span className="num">{Number(trade["lots"]??trade["volume"]??0).toFixed(2)}</span><span className="num">{String(trade["open_price"]??trade["open"]??"—")}</span><span className="num">{String(trade["current_price"]??trade["current"]??"—")}</span><span className="num">{String(trade["sl"]??trade["stop_loss"]??"—")}</span><span className="num">{String(trade["tp"]??trade["take_profit"]??"—")}</span><span className={cn("num text-right font-semibold",pnl>=0?"text-emerald-400":"text-rose-400")}>{displayMoney(pnl)}</span></div>})}</div></div>:<p className="px-4 pb-4 text-xs text-slate-400">{fresh?"No open positions.":"Live positions appear here when MT5 reconnects."}</p>}
       </section>
 
-      <section className="rounded-2xl border border-primary/25 bg-card p-5 shadow-glow" aria-label="Break-even protection">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold">Break-Even Protection</p>
-            <p className="mt-1 text-xs text-muted-foreground">When combined floating profit across all open positions reaches your target, the EA can move eligible positions' stop-losses to their entry prices.</p>
-          </div>
-          <Button size="sm" variant={s.break_even_enabled ? "default" : "outline"} disabled={breakEvenSave.isPending || breakEvenTrigger !== savedBreakEvenTrigger} onClick={() => breakEvenSave.mutate(!s.break_even_enabled)}>
-            {breakEvenSave.isPending ? "Saving…" : s.break_even_enabled ? "ON" : "OFF"}
-          </Button>
-        </div>
-        <div className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="min-w-[180px] flex-1 text-xs text-muted-foreground">
-            Combined floating-profit trigger {accountCurrency ? `(${accountCurrency})` : "(account currency)"}
-            <input type="number" min="0.01" step="0.01" value={breakEvenTrigger} onChange={(event) => setBreakEvenTrigger(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground" />
-          </label>
-          <Button variant="secondary" size="sm" disabled={breakEvenSave.isPending || !Number.isFinite(Number(breakEvenTrigger)) || Number(breakEvenTrigger) <= 0} onClick={() => breakEvenSave.mutate(false)}>Save threshold</Button>
-        </div>
-        <p className="mt-2 text-[11px] text-muted-foreground">Account currency: {accountCurrency ?? "waiting for MT5 currency data"}. This setting is saved to your account; EA-side execution requires an EA build that reads the new settings.</p>
-      </section>
+      <details className="group overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-br from-[#0b1c2d] via-card to-card shadow-[0_12px_40px_-24px_rgba(34,211,238,.35)]" aria-label="Break-even protection">
+  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+    <span className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-300">⌁</span><span><span className="block text-sm font-semibold">Break-Even Protection</span><span className="mt-0.5 block text-[10px] uppercase tracking-wider text-muted-foreground">{s.break_even_enabled ? "Protection enabled" : "Protection disabled"}</span></span></span>
+    <span className="flex items-center gap-3"><span className={cn("rounded-full px-3 py-1 text-[10px] font-bold",s.break_even_enabled?"bg-emerald-400/15 text-emerald-300":"bg-slate-500/15 text-slate-300")}>{s.break_even_enabled ? "ON" : "OFF"}</span><span className="text-muted-foreground transition-transform group-open:rotate-180">⌄</span></span>
+  </summary>
+  <div className="border-t border-cyan-300/15 p-4"><div className="flex flex-wrap items-end gap-3">
+    <label className="min-w-[180px] flex-1 text-xs text-muted-foreground">Profit trigger · {accountCurrency ?? "account currency"}<input type="number" min="0.01" step="0.01" value={breakEvenTrigger} onChange={(event) => setBreakEvenTrigger(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground" /></label>
+    <Button variant="secondary" size="sm" disabled={breakEvenSave.isPending || !Number.isFinite(Number(breakEvenTrigger)) || Number(breakEvenTrigger) <= 0} onClick={() => breakEvenSave.mutate(false)}>Save target</Button>
+    <Button size="sm" variant={s.break_even_enabled ? "default" : "outline"} disabled={breakEvenSave.isPending || breakEvenTrigger !== savedBreakEvenTrigger} onClick={() => breakEvenSave.mutate(!s.break_even_enabled)}>{breakEvenSave.isPending ? "Saving…" : s.break_even_enabled ? "Turn off" : "Turn on"}</Button>
+  </div></div>
+</details>
 
       <Link
         to="/market-report"
@@ -297,7 +271,6 @@ function Dashboard() {
         <ArrowUpRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
       </Link>
 
-      <OverviewTradeSetup />
 
       {fresh && !compatibleEA && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
