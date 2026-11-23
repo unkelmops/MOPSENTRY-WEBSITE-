@@ -230,30 +230,15 @@ function Dashboard() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 pb-24">
-      <div className={cn("flex items-center justify-between rounded-2xl border p-5", fresh ? "border-primary bg-primary/10 shadow-glow" : "bg-card")}>
-        <div>
-          <p className="text-sm text-muted-foreground">Trading account</p>
-          <p className="text-2xl font-bold">
-            {fresh ? "Connected" : connectionLabel === "Connection stale" ? "Stale connection" : ta.last_heartbeat ? "Disconnected" : "Not connected yet"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">Robot {s.is_running ? "running" : "stopped"}</p>
-          {lastBeat && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock3 className="h-3.5 w-3.5" />
-              Last check-in {lastBeat.toLocaleTimeString()}
-            </p>
-          )}
-        </div>
-        <div className="mops-orb-wrap" aria-hidden="true">
-          <div className={cn("mops-orb", fresh ? "mops-orb-live" : "mops-orb-idle")}>
-            <span className="mops-orb-core">M</span>
-            <span className="mops-orb-ring mops-orb-ring-one" />
-            <span className="mops-orb-ring mops-orb-ring-two" />
-            <span className="mops-orb-spark mops-orb-spark-one" />
-            <span className="mops-orb-spark mops-orb-spark-two" />
+      <div className={cn("flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5", fresh ? "border-primary/30 bg-primary/5" : "border-border bg-card/70")}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", fresh ? "bg-profit animate-pulse-dot" : "bg-muted-foreground")} />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold">{fresh ? "Trade account connected" : connectionLabel}</p>
+            <p className="text-[11px] text-muted-foreground">Robot {s.is_running ? "running" : "stopped"}{lastBeat ? ` · Updated ${lastBeat.toLocaleTimeString()}` : ""}</p>
           </div>
         </div>
-                <span className={cn("h-3 w-3 rounded-full", fresh ? "bg-profit animate-pulse-dot" : "bg-muted-foreground")} />
+        {!fresh && <Link to="/account" className="shrink-0 text-xs font-semibold text-primary hover:underline">Connect MT5</Link>}
       </div>
 
       {!fresh && (
@@ -284,17 +269,31 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 px-5 pb-5 sm:grid-cols-2">
-          <div className="rounded-xl bg-muted/40 p-3">
-            <p className="text-xs text-muted-foreground">Balance</p>
-            <p className="num mt-1 font-semibold">{displayMoney(balance)}</p>
-          </div>
-          <div className="rounded-xl bg-muted/40 p-3">
-            <p className="text-xs text-muted-foreground">Open positions</p>
-            <p className="num mt-1 font-semibold">{fresh ? rawTrades.length : "—"}</p>
-          </div>
+        <div className="grid grid-cols-2 gap-3 px-5 pb-4">
+          <div className="rounded-xl bg-muted/40 p-3"><p className="text-xs text-muted-foreground">Balance</p><p className="num mt-1 font-semibold">{displayMoney(balance)}</p></div>
+          <div className="rounded-xl bg-muted/40 p-3"><p className="text-xs text-muted-foreground">Open positions</p><p className="num mt-1 font-semibold">{fresh ? rawTrades.length : "—"}</p></div>
         </div>
-
+        <div className="border-t border-border/70 px-5 py-3">
+          <div className="mb-3 flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Trade</p><span className="text-[11px] text-muted-foreground">{fresh ? `${rawTrades.length} open` : "Waiting for MT5"}</span></div>
+          {fresh && rawTrades.length > 0 ? <div className="overflow-x-auto">
+            <div className="min-w-[620px]">
+              <div className="grid grid-cols-[1.15fr_.55fr_1fr_1fr_.8fr_.8fr_.9fr] gap-2 border-b border-border/60 pb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><span>Symbol / Type</span><span>Lots</span><span>Open price</span><span>Current</span><span>S/L</span><span>T/P</span><span className="text-right">P/L</span></div>
+              {rawTrades.map((trade, index) => {
+                const side = String(trade["side"] ?? trade["type"] ?? "BUY").toUpperCase();
+                const pnl = Number(trade["profit"] ?? trade["pnl"] ?? 0);
+                return <div key={String(trade["ticket"] ?? index)} className="grid grid-cols-[1.15fr_.55fr_1fr_1fr_.8fr_.8fr_.9fr] items-center gap-2 border-b border-border/40 py-3 text-xs last:border-0">
+                  <span><span className="block font-semibold">{String(trade["symbol"] ?? trade["pair"] ?? "—")}</span><span className={cn("mt-0.5 inline-block text-[9px] font-bold", side.includes("SELL") ? "text-loss" : "text-profit")}>{side}</span></span>
+                  <span className="num">{Number(trade["lots"] ?? trade["volume"] ?? 0).toFixed(2)}</span>
+                  <span className="num">{String(trade["open_price"] ?? trade["open"] ?? "—")}</span>
+                  <span className="num">{String(trade["current_price"] ?? trade["current"] ?? "—")}</span>
+                  <span className="num">{String(trade["sl"] ?? trade["stop_loss"] ?? "—")}</span>
+                  <span className="num">{String(trade["tp"] ?? trade["take_profit"] ?? "—")}</span>
+                  <span className={cn("num text-right font-semibold", pnl >= 0 ? "text-profit" : "text-loss")}>{displayMoney(pnl)}</span>
+                </div>;
+              })}
+            </div>
+          </div> : <p className="py-2 text-xs text-muted-foreground">{fresh ? "No open positions on this account." : "Live trade details will appear here when MT5 reconnects."}</p>}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-primary/25 bg-card p-5 shadow-glow" aria-label="Break-even protection">
