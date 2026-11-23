@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Copy, Eye, EyeOff, KeyRound, MonitorDown, PlugZap, RefreshCw, Server } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ThemePicker } from "@/components/theme-picker";
 import { Input } from "@/components/ui/input";
 import {
   regenerateConnectionKey,
@@ -80,6 +81,7 @@ function Account() {
 
   return (
     <div className="space-y-5">
+      <section className="rounded-xl border bg-card p-4"><h2 className="mb-3 text-sm font-semibold">Appearance</h2><p className="mb-3 text-xs text-muted-foreground">Choose your MOPSENTRY accent colour.</p><ThemePicker /></section>
       {/* Account details */}
       <section className="rounded-xl border bg-card p-4">
         <p className="mb-3 text-sm font-medium">Your broker account</p>
