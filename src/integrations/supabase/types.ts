@@ -699,6 +699,8 @@ export type Database = {
       robot_settings: {
         Row: {
           alerts_enabled: boolean
+          break_even_enabled: boolean
+          break_even_trigger: number
           is_running: boolean
           lot_size: number
           max_trades: number
@@ -712,6 +714,8 @@ export type Database = {
         }
         Insert: {
           alerts_enabled?: boolean
+          break_even_enabled?: boolean
+          break_even_trigger?: number
           is_running?: boolean
           lot_size?: number
           max_trades?: number
@@ -740,6 +744,7 @@ export type Database = {
       }
       trading_accounts: {
         Row: {
+          account_currency: string | null
           balance: number | null
           broker_server: string
           connection_key: string
@@ -759,6 +764,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_currency?: string | null
           balance?: number | null
           broker_server?: string
           connection_key?: string
