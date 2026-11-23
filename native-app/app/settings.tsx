@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
+import * as SecureStore from "expo-secure-store";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
@@ -31,7 +32,7 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState("");\n  const [displayCurrency, setDisplayCurrency] = useState("ZAR");
 
   useEffect(() => {
     let mounted = true;
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
   disabled: { color: palette.amber },
   sectionTitle: { color: palette.text, fontSize: 14, fontWeight: "900" },
   body: { color: palette.muted, fontSize: 10, lineHeight: 16, marginTop: 7 },
-  platformRow: { flexDirection: "row", gap: 8, marginTop: 14 },
+  currencyOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 13 },\n  currencyOption: { minWidth: 66, borderWidth: 1, borderColor: palette.border, borderRadius: 9, paddingVertical: 10, alignItems: "center" },\n  currencyOptionActive: { borderColor: palette.blue, backgroundColor: palette.surfaceBlue },\n  currencyOptionText: { color: palette.muted, fontSize: 10, fontWeight: "900" },\n  currencyOptionTextActive: { color: palette.blueBright },\n  platformRow: { flexDirection: "row", gap: 8, marginTop: 14 },
   platformButton: { flex: 1, borderWidth: 1, borderColor: palette.border, borderRadius: 9, padding: 10, alignItems: "center" },
   platformActive: { borderColor: palette.blue, backgroundColor: palette.surfaceBlue },
   platformText: { color: palette.muted, fontSize: 9, fontWeight: "900" },
