@@ -729,6 +729,8 @@ export type Database = {
         }
         Update: {
           alerts_enabled?: boolean
+          break_even_enabled?: boolean
+          break_even_trigger?: number
           is_running?: boolean
           lot_size?: number
           max_trades?: number
@@ -784,6 +786,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_currency?: string | null
           balance?: number | null
           broker_server?: string
           connection_key?: string
