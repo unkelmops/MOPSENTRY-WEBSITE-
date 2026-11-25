@@ -92,7 +92,7 @@ function Control() {
       void recordActivity(runningChange ? (patch.is_running ? "robot_started" : "robot_stopped") : "settings_saved", "saved", runningChange ? (patch.is_running ? "Robot start setting saved" : "Robot stop setting saved") : "Robot settings saved", patch as Record<string, unknown>);
       void qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { toast.error(e.message); void recordActivity("settings_save", "failed", e.message); },
   });
 
   const settingsDirty =
@@ -329,7 +329,6 @@ function Control() {
           </div>
         )}
       </Section>}
-      }
 
       {activePanel === "instruments" && <div className="grid items-stretch gap-3 lg:grid-cols-[1.25fr_.75fr]">
         <Section title="Trading instruments" value={`${s.pairs.length} selected`} icon={Target} accent="cyan">
