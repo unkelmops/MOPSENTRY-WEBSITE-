@@ -46,6 +46,7 @@ function Index() {
           <nav className="flex items-center gap-4 text-xs font-medium text-slate-300 sm:gap-6 sm:text-sm">
             <a href="#features" className="hidden hover:text-white sm:inline">Features</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
+            <Link to="/vps" className="hidden hover:text-white sm:inline">Managed VPS</Link>
             <Button asChild size="sm" className="rounded-xl bg-blue-500 text-white hover:bg-blue-400"><Link to="/auth">Login / Register</Link></Button>
           </nav>
         </header>
@@ -161,13 +162,13 @@ function Index() {
             <article className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.035] p-5">
               <div className="flex items-center gap-2 text-cyan-200"><Cloud className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-wider">VPS Monthly</span></div>
               <p className="mt-5 text-4xl font-black">R200</p><p className="mt-1 text-sm text-slate-400">Per month</p>
-              <p className="mt-4 text-sm leading-6 text-slate-300">For customers who prefer to pay for VPS hosting one month at a time.</p>
+              <p className="mt-4 text-sm leading-6 text-slate-300">A managed Windows VPS subscription for one MT5 terminal, with setup and renewal coordination by MOPSENTRY.</p>
               <ul className="mt-5 space-y-2 text-sm text-slate-300">
                 <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" /> VPS hosting for MT5 and the EA</li>
                 <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" /> Initial VPS configuration assistance</li>
                 <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" /> Billed separately from MOPSENTRY access</li>
               </ul>
-              <div className="mt-auto pt-7"><Button asChild variant="outline" className="w-full rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"><a href="#how-it-works">Enquire about VPS <ArrowRight className="ml-2 h-4 w-4" /></a></Button></div>
+              <div className="mt-auto pt-7"><Button asChild variant="outline" className="w-full rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/vps">Explore managed VPS <ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
             </article>
             <article className="flex flex-col rounded-2xl border border-cyan-300/30 bg-gradient-to-b from-cyan-500/10 to-white/[0.025] p-5">
               <div className="flex items-center gap-2 text-cyan-200"><Cloud className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-wider">VPS 3 Months</span></div>
