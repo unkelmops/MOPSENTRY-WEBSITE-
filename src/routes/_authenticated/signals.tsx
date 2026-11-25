@@ -208,7 +208,7 @@ function FundamentalEvents() {
         <>
           {!selectedGroup ? (
             <>
-              <div className="rounded-xl border border-primary/15 bg-card/90 p-3 shadow-[0_10px_30px_-26px_rgba(34,211,238,.6)]">
+              <div className="relative overflow-hidden rounded-2xl border border-sky-400/20 bg-gradient-to-br from-[#0c1723] via-[#080d14] to-[#05070b] p-4 shadow-[0_14px_38px_-28px_rgba(14,165,233,.55)]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">USD outlook</p>
@@ -225,21 +225,21 @@ function FundamentalEvents() {
               {monthGroups.length === 0 ? (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">{eventView === "upcoming" ? "No upcoming high-impact USD events were returned." : "No released events with recorded actual figures are available yet. Past releases will stay here once collected."}</div>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {monthGroups.map((month, monthIndex) => (
-                    <details key={month.monthKey} open={monthIndex === 0} className="overflow-hidden rounded-xl border bg-card">
+                    <details key={month.monthKey} open={monthIndex === 0} className="overflow-hidden rounded-2xl border border-white/10 bg-[#080b10] shadow-[0_8px_26px_-22px_rgba(14,165,233,.4)]">
                       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-semibold">
                         <span>{month.label}</span>
                         <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">{month.groups.length} event groups · {month.groups.reduce((sum, [, items]) => sum + items.length, 0)} releases <ChevronDown className="h-4 w-4" /></span>
                       </summary>
-                      <div className="grid grid-cols-1 gap-2 border-t p-3 sm:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-2 border-t border-white/10 p-3 sm:grid-cols-2">
                         {month.groups.map(([label, items]) => {
                           const next = items[0];
                           const groupOutlook = buildFundamentalOutlook(items, archived);
                           const direction = groupOutlook.direction;
                           const key = `${month.monthKey}::${label}`;
                           return (
-                            <button key={key} type="button" onClick={() => setSelectedGroup(key)} className="w-full rounded-xl border bg-background px-3 py-2.5 text-left transition-colors hover:border-primary/50 active:scale-[0.99]">
+                            <button key={key} type="button" onClick={() => setSelectedGroup(key)} className="w-full rounded-xl border border-white/[0.08] bg-[#0c1119] px-3 py-3 text-left transition-all hover:border-sky-400/40 hover:bg-[#101a27] hover:shadow-[0_0_20px_rgba(14,165,233,.08)] active:scale-[0.99]">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-semibold">{label}</span>
                                 <span className={`rounded-md px-2 py-1 text-[10px] font-semibold ${directionStyle(direction)}`}>{direction === "unavailable" ? "Not enough data" : direction === "neutral" ? "Mixed · no clear bias" : directionLabel(direction)}</span>
@@ -333,17 +333,17 @@ function Signals() {
   return (
     <>
     <div className="signals-page space-y-3 pb-2">
-      <section className="signals-hero flex items-center justify-between gap-3 rounded-2xl border border-primary/30 px-3 py-2.5">
-        <h1 className="signals-hero-title truncate text-lg font-black tracking-tight">Signals</h1>
-        <div className="flex shrink-0 gap-3 text-[11px] text-muted-foreground">
+      <section className="relative overflow-hidden rounded-2xl border border-sky-500/20 bg-[#05070b] px-4 py-4 shadow-[0_12px_40px_-25px_rgba(14,165,233,.35)]">
+        <div><p className="text-[9px] font-black uppercase tracking-[0.24em] text-sky-400">MOPSENTRY · MARKET DESK</p><h1 className="signals-hero-title mt-1 text-2xl font-black tracking-tight text-white">Signals<span className="text-sky-400">.</span></h1><p className="mt-1 text-[11px] text-slate-500">Market news and account activity</p></div>
+        <div className="flex shrink-0 flex-col gap-2 text-right text-[10px] text-slate-400">
           <span>Live <b className="num text-primary">{live.length}</b></span>
           <span>Pending <b className="num text-primary">{orders.length}</b></span>
         </div>
       </section>
 
-      <div className="grid grid-cols-3 gap-1 rounded-xl border bg-muted/40 p-1">
+      <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-white/10 bg-[#080b10] p-1.5 shadow-inner">
         {tabs.map((tab) => (
-          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`rounded-lg px-2 py-2 text-xs font-medium transition-colors ${activeTab === tab.id ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground"}`}>
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`rounded-lg px-2 py-2 text-xs font-medium transition-colors ${activeTab === tab.id ? "bg-sky-500/15 text-sky-300 ring-1 ring-sky-400/30 shadow-[0_0_18px_rgba(14,165,233,.12)]" : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-200"}`}>
             {tab.label}{tab.count !== undefined && <span className="ml-1 opacity-70">{tab.count}</span>}
           </button>
         ))}
@@ -352,8 +352,8 @@ function Signals() {
       {activeTab === "news" && <FundamentalEvents />}
 
       {activeTab === "trades" && (
-        <section className="overflow-hidden rounded-2xl border border-sky-500/30 bg-[#071522] text-slate-100 shadow-[0_0_28px_rgba(14,165,233,0.08)]">
-          <div className="flex items-center justify-between gap-3 border-b border-sky-900/70 bg-[#0b2032] px-4 py-3">
+        <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#05070b] text-slate-100 shadow-[0_0_28px_rgba(14,165,233,0.08)]">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-gradient-to-r from-[#0b111a] to-[#07090d] px-4 py-3">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-400">MOPSENTRY · TRADE TERMINAL</p>
               <h2 className="mt-1 text-lg font-black tracking-tight">Trade</h2>
@@ -362,8 +362,8 @@ function Signals() {
             <span className="rounded-lg border border-sky-700/70 bg-sky-950/70 px-3 py-2 text-[10px] font-black text-sky-300">{live.length} OPEN</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-px bg-sky-900/70">
-            <div className="bg-[#0a1b2b] p-3">
+          <div className="grid grid-cols-2 gap-px bg-white/10">
+            <div className="bg-[#080b10] p-3">
               <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Balance</p>
               <p className="mt-1 font-mono text-base font-bold tabular-nums text-white">{ta?.balance == null ? "—" : new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta.account_currency || "ZAR", maximumFractionDigits: 2 }).format(Number(ta.balance))}</p>
             </div>
@@ -373,14 +373,14 @@ function Signals() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-b border-sky-900/70 bg-[#0d2234] px-4 py-2.5">
+          <div className="flex items-center justify-between border-b border-white/10 bg-[#090d13] px-4 py-2.5">
             <span className="text-xs font-semibold text-slate-300">Open profit / loss</span>
             <span className={`font-mono text-sm font-black tabular-nums ${live.some(t => typeof t.profit === "number") ? (live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0) >= 0 ? "text-emerald-400" : "text-rose-400") : "text-slate-400"}`}>
               {live.some(t => typeof t.profit === "number") ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0)) : "—"}
             </span>
           </div>
 
-          <div className="grid grid-cols-[1.15fr_.65fr_.9fr_.9fr] gap-2 border-b border-sky-900/70 bg-[#102a40] px-3 py-2 text-[8px] font-black uppercase tracking-wider text-sky-200/70">
+          <div className="grid grid-cols-[1.15fr_.65fr_.9fr_.9fr] gap-2 border-b border-sky-900/70 bg-[#0c121b] px-3 py-2 text-[8px] font-black uppercase tracking-wider text-sky-300/70">
             <span>Market</span><span className="text-right">Size</span><span className="text-right">Entry</span><span className="text-right">Price now</span>
           </div>
           {live.length === 0 ? (
@@ -392,7 +392,7 @@ function Signals() {
             const buy = trade.side !== "SELL";
             const profitKnown = typeof trade.profit === "number";
             return (
-              <div key={trade.ticket ?? index} className="border-b border-sky-950/90 px-3 py-3 last:border-b-0">
+              <div key={trade.ticket ?? index} className="border-b border-white/[0.07] px-3 py-3 transition-colors hover:bg-white/[0.025] last:border-b-0">
                 <div className="grid grid-cols-[1.15fr_.65fr_.9fr_.9fr] items-center gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-xs font-black text-white">{trade.symbol}</p>
@@ -402,14 +402,14 @@ function Signals() {
                   <span className="text-right font-mono text-xs tabular-nums text-slate-200">{Number.isFinite(trade.open_price) ? trade.open_price.toFixed(2) : "—"}</span>
                   <span className="text-right font-mono text-xs tabular-nums text-slate-200">{typeof trade.current_price === "number" ? trade.current_price.toFixed(2) : "—"}</span>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-dashed border-sky-900/70 pt-2 text-[10px]">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-dashed border-white/10 pt-2 text-[10px]">
                   <span className="text-slate-400">Stop {typeof trade.sl === "number" ? trade.sl.toFixed(2) : "—"} · Target {typeof trade.tp === "number" ? trade.tp.toFixed(2) : "—"}</span>
                   <span className={`font-mono font-bold ${profitKnown ? (trade.profit! >= 0 ? "text-emerald-400" : "text-rose-400") : "text-slate-400"}`}>{profitKnown ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(trade.profit!) : "P/L —"}</span>
                 </div>
               </div>
             );
           })}
-          <p className="border-t border-sky-900/70 bg-[#081a29] px-3 py-2.5 text-[9px] text-slate-400">Live account snapshot</p>
+          <p className="border-t border-white/10 bg-[#080b10] px-3 py-2.5 text-[9px] text-slate-400">Live account snapshot</p>
         </section>
       )}
 
@@ -422,7 +422,7 @@ function Signals() {
           {orders.length === 0 ? (
             <div className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm text-muted-foreground"><BellRing className="h-4 w-4" />No waiting orders right now.</div>
           ) : orders.map((order) => (
-            <div key={order.ticket} className="rounded-xl border bg-card p-3">
+            <div key={order.ticket} className="rounded-2xl border border-white/10 bg-[#080b10] p-3 text-slate-100 shadow-[0_8px_24px_-22px_rgba(14,165,233,.4)]">
               <p className="font-semibold">{order.symbol} · {order.type.replace(/_/g, " ")}</p>
               <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
                 <div><p className="text-xs text-muted-foreground">Entry</p><span className="font-mono">{order.entry_price.toFixed(2)}</span></div>
