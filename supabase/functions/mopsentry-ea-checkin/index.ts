@@ -145,6 +145,8 @@ Deno.serve(async (req: Request) => {
     break_even_trigger: settings?.break_even_trigger ?? 10.00,
     // v1.76 expects a buffer value; zero means no additional price offset.
     breakeven_buffer: 0.0,
+    // Keep the EA's profit target aligned with the app's configured break-even trigger.
+    breakeven_profit_target: settings?.break_even_trigger ?? 10.00,
   };
 
   return json({
@@ -165,6 +167,7 @@ Deno.serve(async (req: Request) => {
     break_even_enabled: settingsPayload.break_even_enabled,
     break_even_trigger: settingsPayload.break_even_trigger,
     breakeven_buffer: settingsPayload.breakeven_buffer,
+    breakeven_profit_target: settingsPayload.breakeven_profit_target,
     // Structured settings contract for updated EA builds.
     settings: settingsPayload,
     pending_command_id: command?.id ?? "",
