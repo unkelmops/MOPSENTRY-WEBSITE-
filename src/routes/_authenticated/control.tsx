@@ -138,7 +138,7 @@ function Control() {
           <div>
             <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Robot control</h1>
             <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-              Configure your strategy, execution parameters and protection settings from one command centre.
+              Strategy, risk and protection in one place.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-200">
@@ -181,7 +181,7 @@ function Control() {
               "h-12 min-w-36 rounded-xl px-6 font-bold tracking-wide shadow-lg transition-all",
               s.is_running
                 ? "bg-rose-500 text-white shadow-rose-500/20 hover:bg-rose-600"
-                : "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-cyan-500/20 hover:brightness-110",
+                : "bg-gradient-to-r from-cyan-400 to-blue-600 text-white shadow-[0_0_26px_-5px_rgba(34,211,238,.85)] hover:brightness-125 hover:shadow-[0_0_34px_-4px_rgba(34,211,238,.95)]",
             )}
           >
             <Power className="mr-2 h-4 w-4" /> {s.is_running ? "STOP ROBOT" : "START ROBOT"}
@@ -198,8 +198,8 @@ function Control() {
         )}
       </section>
 
-      <div className="grid gap-3 xl:grid-cols-2">
-        <Section title="Strategy engine" value={selectedStrategy.label} icon={Layers3} accent="violet" defaultOpen>
+      <div className="grid items-stretch gap-3 lg:grid-cols-2">
+        <Section title="Strategy engine" value={selectedStrategy.label} icon={Layers3} accent="violet">
           <div className="grid grid-cols-3 gap-2">
             {strategies.map((st) => {
               const Icon = st.icon;
@@ -228,12 +228,12 @@ function Control() {
           </div>
         </Section>
 
-        <Section title="Timeframe matrix" value={`${s.timeframe} / ${s.higher_timeframe}`} icon={Activity} accent="cyan" defaultOpen>
+        <Section title="Timeframe matrix" value={`${s.timeframe} / ${s.higher_timeframe}`} icon={Activity} accent="cyan">
           <div className="rounded-xl border border-cyan-300/20 bg-cyan-400/[0.045] p-3">
             <div className="mb-3 flex items-center justify-between gap-2">
               <div>
                 <p className="text-xs font-bold text-cyan-200">Higher timeframe · HTF bias</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">Independent trend filter</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Trend filter</p>
               </div>
               <span className="rounded-md border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[9px] font-bold tracking-wider text-cyan-200">HTF FILTER</span>
             </div>
@@ -245,19 +245,19 @@ function Control() {
           </div>
           <div className="mt-3 rounded-xl border border-blue-300/15 bg-blue-400/[0.035] p-3">
             <p className="text-xs font-bold text-blue-200">Requested timeframe</p>
-            <p className="mb-3 mt-0.5 text-[10px] text-muted-foreground">Entry / analysis timeframe · independent of HTF</p>
+            <p className="mb-3 mt-0.5 text-[10px] text-muted-foreground">Entry timeframe</p>
             <div className="grid grid-cols-4 gap-2">
               {TIMEFRAMES.map((timeframe) => (
                 <TimeButton key={timeframe} active={s.timeframe === timeframe} onClick={() => setS({ ...s, timeframe })}>{timeframe}</TimeButton>
               ))}
             </div>
           </div>
-          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">Requested timeframe is saved and included in the EA check-in response. The current protocol does not report an applied-timeframe acknowledgement, so the app cannot confirm when the EA has applied it.</p>
+          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">Saved to the EA on its next check-in.</p>
         </Section>
       </div>
 
       {s.strategy === "scalp" && (
-        <Section title="Scalper entry frequency" value={s.scalper_frequency} icon={Waves} accent="violet" defaultOpen>
+        <Section title="Scalper entry frequency" value={s.scalper_frequency} icon={Waves} accent="violet">
           <div className="grid grid-cols-2 gap-2">
             {(["standard", "aggressive"] as const).map((frequency) => (
               <TimeButton key={frequency} active={s.scalper_frequency === frequency} onClick={() => setS({ ...s, scalper_frequency: frequency })}>
@@ -282,14 +282,14 @@ function Control() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/[0.045] p-3">
           <div className="flex items-center gap-3">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300"><ShieldCheck className="h-5 w-5" /></div>
-            <div><p className="text-xs font-bold">Enable break-even</p><p className="mt-0.5 text-[10px] text-muted-foreground">Move stop loss to entry at the profit trigger.</p></div>
+            <div><p className="text-xs font-bold">Enable break-even</p><p className="mt-0.5 text-[10px] text-muted-foreground">Move stop loss to entry at target profit.</p></div>
           </div>
           <Switch checked={s.break_even_enabled} onCheckedChange={(enabled) => setS({ ...s, break_even_enabled: enabled })} />
         </div>
         {s.break_even_enabled && (
           <div className="mt-4 rounded-xl border border-emerald-300/15 bg-black/10 p-3">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <div><p className="text-xs font-bold">Floating-profit trigger</p><p className="text-[10px] text-muted-foreground">Profit amount required before moving to break-even</p></div>
+              <div><p className="text-xs font-bold">Floating-profit trigger</p><p className="text-[10px] text-muted-foreground">Profit needed to move stop loss to entry</p></div>
               <span className="num rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-sm font-bold text-emerald-200">{Number(s.break_even_trigger).toFixed(2)}</span>
             </div>
             <Slider min={1} max={1000} step={1} value={[Number(s.break_even_trigger)]} onValueChange={([v]) => setS({ ...s, break_even_trigger: v ?? 1 })} />
@@ -297,7 +297,7 @@ function Control() {
         )}
       </Section>
 
-      <div className="grid gap-3 xl:grid-cols-[1.4fr_.6fr]">
+      <div className="grid items-stretch gap-3 lg:grid-cols-[1.25fr_.75fr]">
         <Section title="Trading instruments" value={`${s.pairs.length} selected`} icon={Target} accent="cyan">
           <div className="flex flex-wrap gap-2">
             {ALL_PAIRS.map((p) => (
@@ -311,13 +311,13 @@ function Control() {
         </Section>
         <Section title="Signal alerts" value={s.alerts_enabled ? "ENABLED" : "MUTED"} icon={Bell} accent="violet">
           <div className="flex items-center justify-between gap-3 rounded-xl border border-violet-300/15 bg-violet-400/[0.05] p-3">
-            <div><p className="text-xs font-bold">Trading notifications</p><p className="mt-0.5 text-[10px] text-muted-foreground">Receive signal alerts from MOPSENTRY.</p></div>
+            <div><p className="text-xs font-bold">Trading notifications</p><p className="mt-0.5 text-[10px] text-muted-foreground">Get signal notifications.</p></div>
             <Switch checked={s.alerts_enabled} onCheckedChange={(v) => setS({ ...s, alerts_enabled: v })} />
           </div>
         </Section>
       </div>
 
-      <div className="sticky bottom-3 z-20 rounded-2xl border border-sky-300/20 bg-slate-950/90 p-3 shadow-[0_15px_45px_-20px_rgba(34,211,238,.35)] backdrop-blur-xl sm:p-4">
+      <div className="sticky bottom-3 z-20 rounded-2xl border border-sky-300/30 bg-slate-950/95 p-3 shadow-[0_0_30px_-8px_rgba(34,211,238,.55)] backdrop-blur-xl sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className={cn("grid h-9 w-9 place-items-center rounded-xl", settingsDirty ? "bg-amber-400/10 text-amber-300" : "bg-emerald-400/10 text-emerald-300")}>
@@ -373,28 +373,25 @@ function SliderPanel({ title, value, suffix, min, max, step, current, onChange }
   );
 }
 
-function Section({ title, value, children, icon: Icon, accent = "cyan", defaultOpen = false }: {
-  title: string; value?: string; children: React.ReactNode; icon: React.ElementType; accent?: "cyan" | "violet" | "blue" | "emerald"; defaultOpen?: boolean;
+function Section({ title, value, children, icon: Icon, accent = "cyan" }: {
+  title: string; value?: string; children: React.ReactNode; icon: React.ElementType; accent?: "cyan" | "violet" | "blue" | "emerald";
 }) {
   const accents = {
-    cyan: "border-cyan-300/20 group-open:border-cyan-300/40 text-cyan-200",
-    violet: "border-violet-300/20 group-open:border-violet-300/40 text-violet-200",
-    blue: "border-blue-300/20 group-open:border-blue-300/40 text-blue-200",
-    emerald: "border-emerald-300/20 group-open:border-emerald-300/40 text-emerald-200",
+    cyan: "border-cyan-300/25 text-cyan-200",
+    violet: "border-violet-300/25 text-violet-200",
+    blue: "border-blue-300/25 text-blue-200",
+    emerald: "border-emerald-300/25 text-emerald-200",
   };
   return (
-    <details open={defaultOpen} className={cn("group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-card via-card to-slate-950/55 shadow-[0_12px_38px_-30px_rgba(56,189,248,.65)] transition-all", accents[accent])}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 items-center gap-3">
-          <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl border bg-white/[0.025]", accents[accent])}><Icon className="h-4 w-4" /></span>
-          <span className="min-w-0"><span className="block truncate text-xs font-bold text-foreground">{title}</span><span className="mt-0.5 block text-[9px] font-medium uppercase tracking-[.14em] text-muted-foreground">Configuration module</span></span>
+    <section className={cn("group relative h-full overflow-hidden rounded-2xl border bg-gradient-to-br from-card/95 via-card to-slate-950/65 shadow-[0_14px_42px_-30px_rgba(56,189,248,.7)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_-28px_rgba(56,189,248,.8)]", accents[accent])}>
+      <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] bg-white/[0.025] p-3.5">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl border bg-white/[0.035]", accents[accent])}><Icon className="h-4 w-4" /></span>
+          <span className="truncate text-xs font-bold text-foreground">{title}</span>
         </span>
-        <span className="flex shrink-0 items-center gap-2">
-          {value && <span className="num max-w-[145px] truncate rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-foreground">{value}</span>}
-          <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
-        </span>
-      </summary>
-      <div className="border-t border-white/[0.07] bg-gradient-to-br from-white/[0.025] to-transparent px-4 pb-4 pt-3">{children}</div>
-    </details>
+        {value && <span className="num max-w-[48%] truncate rounded-lg border border-white/10 bg-white/[0.05] px-2 py-1 text-[10px] font-semibold text-foreground">{value}</span>}
+      </div>
+      <div className="p-3.5">{children}</div>
+    </section>
   );
 }
