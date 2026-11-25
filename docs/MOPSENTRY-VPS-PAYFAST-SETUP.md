@@ -38,7 +38,7 @@ PayFast documentation: https://developers.payfast.co.za/docs
 
 ## Security / operational notes
 
-- The return URL is not proof of payment. Only a verified PayFast ITN changes an order to paid.
+- The return URL is not proof of payment. Only a verified PayFast ITN changes an order to paid. The handler checks the ITN signature, merchant ID, source IP on live mode, amount, and PayFast server-side validation.
 - Never send PayFast secrets, Supabase service-role keys or VPS login passwords to the browser.
 - Do not store VPS passwords in `vps_instances`; deliver credentials through a separately secured process.
 - A paid order is not automatically a provisioned VPS. Manual provisioning remains the operational step until the reseller provides an approved API and reseller terms.
