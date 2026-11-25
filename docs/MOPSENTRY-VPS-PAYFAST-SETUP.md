@@ -21,7 +21,7 @@ Set these in **Supabase Dashboard → Edge Functions → Secrets**. Never commit
 - `PAYFAST_MERCHANT_KEY` — PayFast merchant key.
 - `PAYFAST_PASSPHRASE` — PayFast security passphrase (required for recurring billing).
 - `PAYFAST_SANDBOX` — `true` for sandbox; `false` for live.
-- `MOPSENTRY_SITE_URL` — canonical HTTPS website origin, without a trailing slash.
+- `MOPSENTRY_SITE_URL` — full HTTPS website base URL, without a trailing slash. For GitHub Pages use `https://unkelmops.github.io/MOPSENTRY-WEBSITE` (include the repository path). The function derives the CORS origin from this value.
 - `VPS_MONTHLY_AMOUNT_MINOR` — amount in cents; current draft is `20000` (R200.00).
 - Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions.
 
