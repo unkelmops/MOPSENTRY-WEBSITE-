@@ -110,6 +110,7 @@ function VpsPage() {
             <div className="relative rounded-[2rem] border border-blue-300/25 bg-gradient-to-br from-blue-500/15 to-white/[0.035] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.5)] backdrop-blur-xl">
               <div className="flex items-center gap-2 text-cyan-200"><Server className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-[0.18em]">Managed VPS · Monthly</span></div>
               <p className="mt-6 text-5xl font-black tracking-tight">R200<span className="ml-2 text-base font-medium text-slate-400">/ month</span></p>
+              <p className="mt-1 text-[11px] text-cyan-200/80">Proposed launch price · subject to final reseller costs</p>
               <p className="mt-2 text-sm text-slate-400">One customer · One Windows VPS · One MT5 terminal</p>
               <div className="my-6 h-px bg-white/10" />
               <ul className="space-y-3 text-sm text-slate-200">
@@ -154,7 +155,7 @@ function VpsPage() {
 
         <section className="mb-10 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-amber-200"><ShieldCheck className="h-4 w-4" /> Payment and service status</div>
-          <p className="mt-2 text-sm leading-6 text-slate-400">PayFast checkout is being prepared in sandbox mode. A VPS is only ordered after MOPSENTRY verifies the payment. Your account will then show payment confirmation, renewal dates and VPS assignment status.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">PayFast checkout is being prepared in sandbox mode. The displayed R200 is a proposed price, not a confirmed final tariff. A VPS is only ordered after MOPSENTRY verifies payment and confirms the reseller service. Your account will then show payment confirmation, renewal dates and VPS assignment status.</p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
             <span className="inline-flex items-center gap-2"><CreditCard className="h-4 w-4" /> Secure payment integration planned</span>
             <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4" /> Monthly renewal tracking planned</span>
