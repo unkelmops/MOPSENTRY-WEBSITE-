@@ -109,8 +109,8 @@ function VpsPage() {
             <div aria-hidden="true" className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-br from-blue-500/20 via-cyan-400/10 to-transparent blur-2xl" />
             <div className="relative rounded-[2rem] border border-blue-300/25 bg-gradient-to-br from-blue-500/15 to-white/[0.035] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.5)] backdrop-blur-xl">
               <div className="flex items-center gap-2 text-cyan-200"><Server className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-[0.18em]">Managed VPS · Monthly</span></div>
-              <p className="mt-6 text-5xl font-black tracking-tight">R200<span className="ml-2 text-base font-medium text-slate-400">/ month</span></p>
-              <p className="mt-1 text-[11px] text-cyan-200/80">Proposed launch price · subject to final reseller costs</p>
+              <p className="mt-6 text-3xl font-black tracking-tight">Pricing confirmed at launch</p>
+              <p className="mt-2 text-[11px] text-cyan-200/80">Monthly price and hardware specifications are being finalised with the hosting supplier.</p>
               <p className="mt-2 text-sm text-slate-400">One customer · One Windows VPS · One MT5 terminal</p>
               <div className="my-6 h-px bg-white/10" />
               <ul className="space-y-3 text-sm text-slate-200">
@@ -118,10 +118,10 @@ function VpsPage() {
                   <li key={item} className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />{item}</li>
                 ))}
               </ul>
-              <Button onClick={startCheckout} disabled={checkoutLoading} className="mt-8 h-11 w-full rounded-xl bg-blue-500 font-semibold text-white hover:bg-blue-400">
-                {checkoutLoading ? "Preparing secure checkout…" : "Subscribe with PayFast"} <ArrowRight className="ml-2 h-4 w-4" />
+              <Button onClick={startCheckout} disabled={true} className="mt-8 h-11 w-full rounded-xl bg-slate-700 font-semibold text-slate-300">
+                VPS subscriptions opening soon
               </Button>
-              <p className="mt-3 text-center text-[10px] leading-5 text-slate-500">Recurring monthly subscriptions are processed by PayFast. Card payments only for recurring billing.</p>
+              <p className="mt-3 text-center text-[10px] leading-5 text-slate-500">Checkout stays disabled until supplier terms, final pricing and PayFast verification are complete.</p>
             </div>
           </aside>
         </section>
@@ -155,7 +155,7 @@ function VpsPage() {
 
         <section className="mb-10 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-amber-200"><ShieldCheck className="h-4 w-4" /> Payment and service status</div>
-          <p className="mt-2 text-sm leading-6 text-slate-400">PayFast checkout is being prepared in sandbox mode. The displayed R200 is a proposed price, not a confirmed final tariff. A VPS is only ordered after MOPSENTRY verifies payment and confirms the reseller service. Your account will then show payment confirmation, renewal dates and VPS assignment status.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">PayFast checkout is being prepared in sandbox mode. No final monthly price or hardware specification is published yet. Checkout remains disabled until MOPSENTRY verifies the reseller service and payment setup. Your account will then show payment confirmation, renewal dates and VPS assignment status.</p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
             <span className="inline-flex items-center gap-2"><CreditCard className="h-4 w-4" /> Secure payment integration planned</span>
             <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4" /> Monthly renewal tracking planned</span>
