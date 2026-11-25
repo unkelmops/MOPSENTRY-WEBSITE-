@@ -87,6 +87,12 @@ Deno.serve(async (req) => {
       const periodEnd = new Date(now);
       periodEnd.setMonth(periodEnd.getMonth() + 1);
       const subscriptionToken = params.get("token");
+      if (!subscriptionToken) return text("Missing recurring subscription token", 400);
+      const { error: tokenError } = await admin.schema("private").from("vps_provider_subscriptions").upsert({
+        order_id: order.id, provider: "payfast", subscription_token: subscriptionToken,
+        status: "active", updated_at: now.toISOString(),
+      }, { onConflict: "order_id" });
+      if (tokenError) throw tokenError;
       const { error: txError } = await admin.from("vps_payment_transactions").upsert({
         order_id: order.id, provider: "payfast", provider_reference: paymentId,
         amount_minor: Math.round(gross * 100), currency: "ZAR", status: "paid",
@@ -94,7 +100,7 @@ Deno.serve(async (req) => {
       }, { onConflict: "idempotency_key" });
       if (txError) throw txError;
       const { error: updateError } = await admin.from("vps_orders").update({
-        status: order.status === "active" ? "active" : "paid", provider_payment_id: paymentId, provider_subscription_token: subscriptionToken,
+        status: order.status === "active" ? "active" : "paid", provider_payment_id: paymentId,
         current_period_start: now.toISOString(), current_period_end: periodEnd.toISOString(), updated_at: now.toISOString(),
       }).eq("id", order.id);
       if (updateError) throw updateError;
