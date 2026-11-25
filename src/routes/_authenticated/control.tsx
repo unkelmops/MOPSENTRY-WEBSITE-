@@ -16,6 +16,8 @@ import { appAccessQuery } from "@/lib/app-access";
 import { tradingAccountQuery } from "@/lib/trading-account";
 import { cn } from "@/lib/utils";
 import { HIGHER_TIMEFRAMES, TIMEFRAMES } from "@/lib/robot-options";
+import { supabase } from "@/integrations/supabase/client";
+import { recordActivity } from "@/lib/activity-log";
 
 export const Route = createFileRoute("/_authenticated/control")({
   head: () => ({ meta: [{ title: "Robot control — MOPSENTRY EA" }] }),
@@ -68,6 +70,17 @@ function Control() {
   const { data: account } = useQuery(tradingAccountQuery);
   const [s, setS] = useState<RobotSettings>(data);
   const [savedSettings, setSavedSettings] = useState<RobotSettings>(data);
+  const [activePanel, setActivePanel] = useState<"setup" | "risk" | "protection" | "instruments" | "activity">("setup");
+  const { data: activityRows = [] } = useQuery({
+    queryKey: ["mopsentry-activity-log"],
+    queryFn: async () => {
+      const { data: rows, error } = await supabase.from("mopsentry_activity_log")
+        .select("id,event_type,status,message,created_at").order("created_at", { ascending: false }).limit(12);
+      if (error) throw error;
+      return rows ?? [];
+    },
+    refetchInterval: 5000,
+  });
   const save = useMutation({
     mutationFn: async (patch: Partial<RobotSettings>) => {
       await saveRobotSettings(patch);
@@ -75,6 +88,8 @@ function Control() {
     },
     onSuccess: (patch) => {
       setSavedSettings((current) => ({ ...current, ...patch }));
+      const runningChange = Object.prototype.hasOwnProperty.call(patch, "is_running");
+      void recordActivity(runningChange ? (patch.is_running ? "robot_started" : "robot_stopped") : "settings_saved", "saved", runningChange ? (patch.is_running ? "Robot start setting saved" : "Robot stop setting saved") : "Robot settings saved", patch as Record<string, unknown>);
       void qc.invalidateQueries({ queryKey: robotSettingsQuery.queryKey });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -206,6 +221,14 @@ function Control() {
         )}
       </section>
 
+      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-1.5 sm:grid sm:grid-cols-5">
+        {([["setup", "Setup"], ["risk", "Risk"], ["protection", "Protection"], ["instruments", "Pairs"], ["activity", "Activity"]] as const).map(([key, label]) => (
+          <button key={key} type="button" onClick={() => setActivePanel(key)} aria-pressed={activePanel === key}
+            className={cn("min-h-10 flex-1 whitespace-nowrap rounded-xl px-3 text-[11px] font-bold transition-colors", activePanel === key ? "bg-sky-400/15 text-sky-200 shadow-[0_0_18px_-10px_rgba(34,211,238,.8)]" : "text-muted-foreground hover:bg-white/5 hover:text-foreground")}>{label}</button>
+        ))}
+      </div>
+
+      {activePanel === "setup" && <>
       <div className="grid items-stretch gap-3 lg:grid-cols-2">
         <Section title="Strategy engine" value={selectedStrategy.label} icon={Layers3} accent="violet">
           <div className="grid grid-cols-3 gap-2">
@@ -277,7 +300,9 @@ function Control() {
         </Section>
       )}
 
-      <Section title="Risk & execution" value={`${Number(s.lot_size).toFixed(2)} lots · ${Number(s.risk_percent).toFixed(1)}% risk`} icon={Gauge} accent="blue">
+      </>}
+
+      {activePanel === "risk" && <Section title="Risk & execution" value={`${Number(s.lot_size).toFixed(2)} lots · ${Number(s.risk_percent).toFixed(1)}% risk`} icon={Gauge} accent="blue">
         <div className="grid gap-3 md:grid-cols-3">
           <SliderPanel title="Lot size" value={Number(s.lot_size).toFixed(2)} suffix="LOTS" min={0.01} max={1} step={0.01} current={Number(s.lot_size)} onChange={(v) => setS({ ...s, lot_size: v })} />
           <SliderPanel title="Risk per trade" value={`${Number(s.risk_percent).toFixed(1)}%`} suffix="RISK" min={0.1} max={5} step={0.1} current={Number(s.risk_percent)} onChange={(v) => setS({ ...s, risk_percent: v })} />
@@ -286,7 +311,7 @@ function Control() {
         <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">Maximum trades is the EA's total trade cap, not extra entries per setup. The EA must count its own open positions and pending orders for the symbol before placing a new order.</p>
       </Section>
 
-      <Section title="Break-even protection" value={s.break_even_enabled ? `ON · ${Number(s.break_even_trigger).toFixed(2)}` : "OFF"} icon={ShieldCheck} accent="emerald">
+      {activePanel === "protection" && <Section title="Break-even protection" value={s.break_even_enabled ? `ON · ${Number(s.break_even_trigger).toFixed(2)}` : "OFF"} icon={ShieldCheck} accent="emerald">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/[0.045] p-3">
           <div className="flex items-center gap-3">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300"><ShieldCheck className="h-5 w-5" /></div>
@@ -305,7 +330,7 @@ function Control() {
         )}
       </Section>
 
-      <div className="grid items-stretch gap-3 lg:grid-cols-[1.25fr_.75fr]">
+      {activePanel === "instruments" && <div className="grid items-stretch gap-3 lg:grid-cols-[1.25fr_.75fr]">
         <Section title="Trading instruments" value={`${s.pairs.length} selected`} icon={Target} accent="cyan">
           <div className="flex flex-wrap gap-2">
             {ALL_PAIRS.map((p) => (
@@ -324,6 +349,17 @@ function Control() {
           </div>
         </Section>
       </div>
+
+      {activePanel === "activity" && <Section title="Activity log" value={`${activityRows.length} recent events`} icon={Activity} accent="cyan">
+        <div className="space-y-2">
+          {activityRows.length ? activityRows.map((item) => (
+            <div key={item.id} className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
+              <span className={cn("mt-1 h-2 w-2 shrink-0 rounded-full", item.status === "failed" ? "bg-rose-400" : item.status === "queued" ? "bg-amber-300" : item.status === "acknowledged" ? "bg-emerald-300" : "bg-cyan-300")} />
+              <div className="min-w-0 flex-1"><p className="text-xs font-semibold">{item.message}</p><p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">{String(item.status).replaceAll("_", " ")} · {new Date(item.created_at).toLocaleString()}</p></div>
+            </div>
+          )) : <p className="text-xs text-muted-foreground">No activity recorded yet. Saving settings or sending a robot command will appear here.</p>}
+        </div>
+      </Section>}
 
       <div className="sticky bottom-3 z-20 rounded-2xl border border-sky-300/30 bg-slate-950/95 p-3 shadow-[0_0_30px_-8px_rgba(34,211,238,.55)] backdrop-blur-xl sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
