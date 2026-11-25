@@ -1,9 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Clock3, CreditCard,
   Headset, MonitorDown, Server, ShieldCheck, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 import logo from "@/assets/logo-mopsentry-a-clean.png";
 
 export const Route = createFileRoute("/vps")({
@@ -29,6 +32,39 @@ const steps = [
 ];
 
 function VpsPage() {
+  const navigate = useNavigate();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const startCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.message("Sign in to continue to VPS checkout.");
+        await navigate({ to: "/auth" });
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("mopsentry-vps-checkout");
+      if (error || !data?.action || !data?.fields) {
+        throw new Error(data?.error || error?.message || "Could not start checkout.");
+      }
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.action;
+      Object.entries(data.fields as Record<string, string>).forEach(([name, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to start checkout.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#070b14] text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -81,10 +117,10 @@ function VpsPage() {
                   <li key={item} className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />{item}</li>
                 ))}
               </ul>
-              <Button asChild className="mt-8 h-11 w-full rounded-xl bg-blue-500 font-semibold text-white hover:bg-blue-400">
-                <Link to="/auth">Continue to account <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Button onClick={startCheckout} disabled={checkoutLoading} className="mt-8 h-11 w-full rounded-xl bg-blue-500 font-semibold text-white hover:bg-blue-400">
+                {checkoutLoading ? "Preparing secure checkout…" : "Subscribe with PayFast"} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <p className="mt-3 text-center text-[10px] leading-5 text-slate-500">Checkout will become available once the payment provider is configured.</p>
+              <p className="mt-3 text-center text-[10px] leading-5 text-slate-500">Recurring monthly subscriptions are processed by PayFast. Card payments only for recurring billing.</p>
             </div>
           </aside>
         </section>
@@ -118,7 +154,7 @@ function VpsPage() {
 
         <section className="mb-10 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-amber-200"><ShieldCheck className="h-4 w-4" /> Payment and service status</div>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Online checkout is not active yet. Do not make a payment from this page. Once the payment gateway and reseller account are configured, your account will show payment confirmation, renewal dates and VPS assignment status.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">PayFast checkout is being prepared in sandbox mode. A VPS is only ordered after MOPSENTRY verifies the payment. Your account will then show payment confirmation, renewal dates and VPS assignment status.</p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
             <span className="inline-flex items-center gap-2"><CreditCard className="h-4 w-4" /> Secure payment integration planned</span>
             <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4" /> Monthly renewal tracking planned</span>
