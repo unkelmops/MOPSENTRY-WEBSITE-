@@ -58,10 +58,17 @@ Deno.serve(async (req) => {
     const validationUrl = sandbox
       ? "https://sandbox.payfast.co.za/eng/query/validate"
       : "https://www.payfast.co.za/eng/query/validate";
+    const validationParams = new URLSearchParams();
+    for (const [key, value] of params.entries()) {
+      if (key !== "signature") validationParams.append(key, value);
+    }
+    const validationBody = [...validationParams.entries()]
+      .map(([key, value]) => `${key}=${encode(value)}`)
+      .join("&");
     const validation = await fetch(validationUrl, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: raw,
+      body: validationBody,
     });
     if (!validation.ok || (await validation.text()).trim() !== "VALID") return text("PayFast validation failed", 400);
 
@@ -69,12 +76,14 @@ Deno.serve(async (req) => {
     const paymentId = params.get("pf_payment_id");
     const status = params.get("payment_status");
     const gross = Number(params.get("amount_gross") ?? params.get("amount"));
-    if (!orderId || !paymentId || !Number.isFinite(gross)) return text("Missing payment reference", 400);
+    if (!orderId || !paymentId || !status) return text("Missing payment reference", 400);
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
     const { data: order, error: orderError } = await admin.from("vps_orders").select("id,user_id,amount_minor,status").eq("id", orderId).maybeSingle();
     if (orderError || !order) return text("Unknown order", 404);
-    if (Math.abs(Math.round(gross * 100) - order.amount_minor) > 1) return text("Payment amount mismatch", 400);
+    if (status === "COMPLETE" && (!Number.isFinite(gross) || Math.abs(Math.round(gross * 100) - order.amount_minor) > 1)) {
+      return text("Payment amount mismatch", 400);
+    }
 
     const { error: eventError } = await admin.from("vps_payment_events").upsert({
       provider: "payfast", provider_event_id: paymentId, event_type: status ?? "UNKNOWN",
@@ -99,9 +108,8 @@ Deno.serve(async (req) => {
         current_period_start: now.toISOString(), current_period_end: periodEnd.toISOString(), updated_at: now.toISOString(),
       }).eq("id", order.id);
       if (updateError) throw updateError;
-    } else if (status === "FAILED" || status === "CANCELLED") {
-      const nextStatus = status === "FAILED" ? "past_due" : "cancelled";
-      const { error: updateError } = await admin.from("vps_orders").update({ status: nextStatus, updated_at: new Date().toISOString() }).eq("id", order.id);
+    } else if (status === "CANCELLED") {
+      const { error: updateError } = await admin.from("vps_orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", order.id);
       if (updateError) throw updateError;
     }
     return text("OK");
