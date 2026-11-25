@@ -140,6 +140,7 @@ function VpsPage() {
             <p className="mt-3 text-sm leading-6 text-slate-400">Five Windows VPS options based on FxSVPS published hardware tiers. MOPSENTRY handles the customer relationship, package selection and setup coordination.</p>
             <p className="mt-3 text-[11px] leading-5 text-amber-200/80">Indicative MOPSENTRY retail prices only. Prices include a provisional margin and currency buffer, and are not checkout prices until FxSVPS confirms the reseller wholesale rate and billing terms.</p>
           </div>
+          <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Subscription duration">{([{months:3,label:"3 months"},{months:6,label:"6 months"},{months:12,label:"1 year"}] as const).map((term) => <button key={term.months} type="button" aria-pressed={billingMonths === term.months} onClick={() => setBillingMonths(term.months)} className={cn("rounded-lg px-4 py-2 text-xs font-bold",billingMonths === term.months ? "bg-blue-500 text-white" : "bg-white/5 text-slate-300")}>{term.label}</button>)}</div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
               { name: "STARTER", price: "R189", spec: "1 vCPU · 1 GB RAM · 25 GB NVMe", base: "FxSVPS public rate: $4.50/month, billed quarterly", fit: "One light MT5 setup", tag: "ENTRY" },
