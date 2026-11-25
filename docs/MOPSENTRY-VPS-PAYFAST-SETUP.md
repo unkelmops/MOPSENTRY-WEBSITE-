@@ -20,7 +20,8 @@ Set these in **Supabase Dashboard → Edge Functions → Secrets**. Never commit
 - `PAYFAST_MERCHANT_ID` — PayFast merchant ID.
 - `PAYFAST_MERCHANT_KEY` — PayFast merchant key.
 - `PAYFAST_PASSPHRASE` — PayFast security passphrase (required for recurring billing).
-- `PAYFAST_SANDBOX` — `true` for sandbox; `false` for live.
+- `PAYFAST_SANDBOX` — `true` for sandbox; `false` for live. If omitted, the functions default to sandbox.
+- `VPS_CHECKOUT_ENABLED` — must be explicitly set to `true` to open checkout; keep it unset / `false` until reseller terms and retail pricing are approved.
 - `MOPSENTRY_SITE_URL` — full HTTPS website base URL, without a trailing slash. For GitHub Pages use `https://unkelmops.github.io/MOPSENTRY-WEBSITE` (include the repository path). The function derives the CORS origin from this value.
 - `VPS_MONTHLY_AMOUNT_MINOR` — amount in cents; current draft is `20000` (R200.00).
 - Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions.
@@ -31,7 +32,7 @@ Set these in **Supabase Dashboard → Edge Functions → Secrets**. Never commit
 2. In PayFast, set a security passphrase in Developer Settings.
 3. Enable recurring subscriptions. PayFast recurring billing uses credit cards; other methods are not available for recurring subscriptions.
 4. Use sandbox merchant credentials first. Create a sandbox recurring subscription and verify the ITN event and the Supabase order status.
-5. Only after all sandbox tests pass, switch the secrets to live merchant credentials and set `PAYFAST_SANDBOX=false`.
+5. Only after all sandbox tests pass and the reseller quote, retail price and customer terms are approved, switch the secrets to live merchant credentials, set `PAYFAST_SANDBOX=false`, then explicitly set `VPS_CHECKOUT_ENABLED=true`.
 
 PayFast documentation: https://developers.payfast.co.za/docs
 
