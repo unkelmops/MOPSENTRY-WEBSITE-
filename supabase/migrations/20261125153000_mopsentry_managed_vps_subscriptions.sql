@@ -99,3 +99,6 @@ grant all on public.vps_orders, public.vps_instances,
 comment on table public.vps_orders is 'MOPSENTRY-managed VPS customer subscriptions; only trusted server functions may create or update orders.';
 comment on table public.vps_instances is 'One managed Windows VPS assignment per VPS order; credentials must never be stored in this table.';
 comment on table public.vps_payment_events is 'Verified provider webhook event ledger; service-role access only.';
+
+-- PayFast recurring subscription token is stored only server-side.
+alter table public.vps_orders add column if not exists provider_subscription_token text;
