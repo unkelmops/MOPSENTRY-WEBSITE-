@@ -269,7 +269,7 @@ function Control() {
         </Section>
       )}
 
-      <Section title="Risk & execution" value={`${Number(s.lot_size).toFixed(2)} lots · ${Number(s.risk_percent).toFixed(1)}% risk`} icon={Gauge} accent="blue" defaultOpen>
+      <Section title="Risk & execution" value={`${Number(s.lot_size).toFixed(2)} lots · ${Number(s.risk_percent).toFixed(1)}% risk`} icon={Gauge} accent="blue">
         <div className="grid gap-3 md:grid-cols-3">
           <SliderPanel title="Lot size" value={Number(s.lot_size).toFixed(2)} suffix="LOTS" min={0.01} max={1} step={0.01} current={Number(s.lot_size)} onChange={(v) => setS({ ...s, lot_size: v })} />
           <SliderPanel title="Risk per trade" value={`${Number(s.risk_percent).toFixed(1)}%`} suffix="RISK" min={0.1} max={5} step={0.1} current={Number(s.risk_percent)} onChange={(v) => setS({ ...s, risk_percent: v })} />
@@ -278,7 +278,7 @@ function Control() {
         <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">Maximum trades is the EA's total trade cap, not extra entries per setup. The EA must count its own open positions and pending orders for the symbol before placing a new order.</p>
       </Section>
 
-      <Section title="Break-even protection" value={s.break_even_enabled ? `ON · ${Number(s.break_even_trigger).toFixed(2)}` : "OFF"} icon={ShieldCheck} accent="emerald" defaultOpen>
+      <Section title="Break-even protection" value={s.break_even_enabled ? `ON · ${Number(s.break_even_trigger).toFixed(2)}` : "OFF"} icon={ShieldCheck} accent="emerald">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/[0.045] p-3">
           <div className="flex items-center gap-3">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-400/10 text-emerald-300"><ShieldCheck className="h-5 w-5" /></div>
