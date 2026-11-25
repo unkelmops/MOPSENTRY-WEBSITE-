@@ -26,7 +26,7 @@ const benefits = [
 ];
 
 const steps = [
-  { number: "01", title: "Choose your VPS", text: "Select the monthly managed VPS package." },
+  { number: "01", title: "Choose your VPS", text: "Choose a 3, 6 or 12-month subscription term." },
   { number: "02", title: "Choose your package", text: "Select the Windows VPS tier that fits your MT5 setup while signed in to MOPSENTRY." },
   { number: "03", title: "Payment and provisioning", text: "After payment is verified, MOPSENTRY arranges your VPS and sends setup instructions securely." },
 ];
@@ -35,6 +35,7 @@ function VpsPage() {
   const navigate = useNavigate();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [billingMonths, setBillingMonths] = useState<3 | 6 | 12>(3);
   useEffect(() => {
     let mounted = true;
     void supabase.auth.getSession().then(({ data }) => { if (mounted) setSignedIn(!!data.session); });
@@ -115,7 +116,7 @@ function VpsPage() {
           <aside className="relative mx-auto w-full max-w-md">
             <div aria-hidden="true" className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-br from-blue-500/20 via-cyan-400/10 to-transparent blur-2xl" />
             <div className="relative rounded-[2rem] border border-blue-300/25 bg-gradient-to-br from-blue-500/15 to-white/[0.035] p-6 shadow-[0_30px_100px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-              <div className="flex items-center gap-2 text-cyan-200"><Server className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-[0.18em]">Managed VPS · Monthly</span></div>
+              <div className="flex items-center gap-2 text-cyan-200"><Server className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-[0.18em]">Managed VPS · Flexible terms</span></div>
               <p className="mt-6 text-3xl font-black tracking-tight">Five MOPSENTRY VPS tiers</p>
               <p className="mt-2 text-[11px] text-cyan-200/80">Choose from entry-level hosting through to higher-memory MT5 environments.</p>
               <p className="mt-2 text-sm text-slate-400">One customer · One Windows VPS · One primary MT5 terminal</p>
@@ -137,17 +138,17 @@ function VpsPage() {
           <div className="max-w-3xl">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">MOPSENTRY VPS packages</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Choose the power behind your MT5 setup.</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400">Five Windows VPS options based on FxSVPS published hardware tiers. MOPSENTRY handles the customer relationship, package selection and setup coordination.</p>
-            <p className="mt-3 text-[11px] leading-5 text-amber-200/80">Indicative MOPSENTRY retail prices only. Prices include a provisional margin and currency buffer, and are not checkout prices until FxSVPS confirms the reseller wholesale rate and billing terms.</p>
+            <p className="mt-3 text-sm leading-6 text-slate-400">Five Windows VPS options, presented and managed under the MOPSENTRY brand. Choose a subscription term that suits your budget.</p>
+            <p className="mt-3 text-[11px] leading-5 text-amber-200/80">Choose your subscription period below. Displayed totals are indicative; checkout will open only after MOPSENTRY confirms final service pricing and fulfilment.</p>
           </div>
           <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Subscription duration">{([{months:3,label:"3 months"},{months:6,label:"6 months"},{months:12,label:"1 year"}] as const).map((term) => <button key={term.months} type="button" aria-pressed={billingMonths === term.months} onClick={() => setBillingMonths(term.months)} className={cn("rounded-lg px-4 py-2 text-xs font-bold",billingMonths === term.months ? "bg-blue-500 text-white" : "bg-white/5 text-slate-300")}>{term.label}</button>)}</div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
-              { name: "STARTER", price: "R189", spec: "1 vCPU · 1 GB RAM · 25 GB NVMe", base: "FxSVPS public rate: $4.50/month, billed quarterly", fit: "One light MT5 setup", tag: "ENTRY" },
-              { name: "PRO", price: "R239", spec: "1 vCPU · 2 GB RAM · 35 GB NVMe", base: "FxSVPS public rate: $6.99/month", fit: "One MT5 terminal with room for charts and tools", tag: "ESSENTIAL" },
-              { name: "TURBO", price: "R299", spec: "2 vCPU · 3 GB RAM · 40 GB NVMe", base: "FxSVPS public rate: $9.99/month", fit: "MOPSENTRY EA and a busier MT5 workspace", tag: "POPULAR" },
-              { name: "BOOST", price: "R799", spec: "4 vCPU · 6 GB RAM · 80 GB NVMe", base: "FxSVPS public rate: $35.99/month", fit: "Heavier charts, indicators and multiple workloads", tag: "PERFORMANCE" },
-              { name: "SUPER", price: "R1,269", spec: "4 vCPU · 12 GB RAM · 150 GB NVMe", base: "FxSVPS public rate: $59.99/month", fit: "High-memory MT5 and demanding workloads", tag: "PREMIUM" },
+              { name: "STARTER", monthly: 189, spec: "1 vCPU · 1 GB RAM · 25 GB NVMe", fit: "One light MT5 setup", tag: "ENTRY" },
+              { name: "PRO", monthly: 239, spec: "1 vCPU · 2 GB RAM · 35 GB NVMe", fit: "One MT5 terminal with room for charts and tools", tag: "ESSENTIAL" },
+              { name: "TURBO", monthly: 299, spec: "2 vCPU · 3 GB RAM · 40 GB NVMe", fit: "MOPSENTRY EA and a busier MT5 workspace", tag: "POPULAR" },
+              { name: "BOOST", monthly: 799, spec: "4 vCPU · 6 GB RAM · 80 GB NVMe", fit: "Heavier charts, indicators and multiple workloads", tag: "PERFORMANCE" },
+              { name: "SUPER", monthly: 1269, spec: "4 vCPU · 12 GB RAM · 150 GB NVMe", fit: "High-memory MT5 and demanding workloads", tag: "PREMIUM" },
             ].map((plan) => (
               <article key={plan.name} className="relative overflow-hidden rounded-2xl border border-blue-300/15 bg-gradient-to-b from-blue-400/[0.09] to-white/[0.025] p-5 shadow-[0_18px_55px_rgba(0,0,0,0.18)]">
                 <div className="flex items-center justify-between gap-3">
@@ -155,21 +156,22 @@ function VpsPage() {
                   <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] font-bold text-slate-300">WINDOWS VPS</span>
                 </div>
                 <h3 className="mt-4 text-xl font-black tracking-wide">{plan.name}</h3>
-                <p className="mt-2 text-3xl font-black tracking-tight">{plan.price}<span className="ml-1 text-xs font-medium text-slate-400">/ month*</span></p>
+                <p className="mt-2 text-3xl font-black tracking-tight">R{plan.monthly.toLocaleString("en-ZA")}<span className="ml-1 text-xs font-medium text-slate-400">/ month</span></p>
+                <p className="mt-1 text-xs font-semibold text-cyan-200">{billingMonths}-month total: R{(plan.monthly * billingMonths).toLocaleString("en-ZA")}</p>
                 <div className="my-4 h-px bg-white/10" />
                 <p className="text-sm font-semibold text-slate-100">{plan.spec}</p>
                 <p className="mt-2 text-xs leading-5 text-slate-400">{plan.fit}</p>
                 <ul className="mt-4 space-y-2 text-xs text-slate-300">
                   {["Genuine Windows Server licence", "RDP and Administrator access", "NVMe storage and 1 Gbps uplink", "DDoS protection and 24/7 support", "MOPSENTRY setup coordination"].map((item) => <li key={item} className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" />{item}</li>)}
                 </ul>
-                <p className="mt-4 text-[10px] leading-4 text-slate-500">{plan.base}</p>
+                <p className="mt-4 text-[10px] leading-4 text-slate-500"></p>
                 <Button onClick={() => toast.message("VPS ordering will open after FxSVPS confirms MOPSENTRY's reseller pricing and provisioning workflow.")} variant="outline" className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
                   {signedIn ? "Select package · opening soon" : "Sign in to select"}
                 </Button>
               </article>
             ))}
           </div>
-          <p className="mt-4 text-[10px] leading-5 text-slate-500">*Starter is listed by FxSVPS as quarterly billed. Other displayed supplier rates are monthly. MOPSENTRY's final billing interval, exchange-rate buffer, reseller discount and retail price will be confirmed before checkout is enabled.</p>
+          <p className="mt-4 text-[10px] leading-5 text-slate-500">*Prices shown are provisional MOPSENTRY customer prices. The selected term total is calculated from the displayed monthly rate; any final discounts, taxes or fees will be shown clearly before payment. No payment is currently required.</p>
         </section>
 
         <section className="grid gap-3 border-t border-white/10 py-10 sm:grid-cols-3">
