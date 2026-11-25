@@ -52,7 +52,9 @@ Deno.serve(async (req) => {
     if (!verifySignature(params, passphrase)) return text("Invalid signature", 400);
     if (params.get("merchant_id") !== merchantId) return text("Invalid merchant", 400);
     const sourceIp = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip");
-    if (Deno.env.get("PAYFAST_SANDBOX") === "false" && sourceIp && !isPayfastIp(sourceIp)) return text("Untrusted notification source", 403);
+    if (Deno.env.get("PAYFAST_SANDBOX") === "false" && (!sourceIp || !isPayfastIp(sourceIp))) {
+      return text("Untrusted notification source", 403);
+    }
 
     const sandbox = Deno.env.get("PAYFAST_SANDBOX") !== "false";
     const validationUrl = sandbox
@@ -84,6 +86,8 @@ Deno.serve(async (req) => {
     if (status === "COMPLETE" && (!Number.isFinite(gross) || Math.abs(Math.round(gross * 100) - order.amount_minor) > 1)) {
       return text("Payment amount mismatch", 400);
     }
+    const subscriptionToken = status === "COMPLETE" ? params.get("token") : null;
+    if (status === "COMPLETE" && !subscriptionToken) return text("Missing recurring subscription token", 400);
 
     const { error: eventError } = await admin.from("vps_payment_events").upsert({
       provider: "payfast", provider_event_id: paymentId, event_type: status ?? "UNKNOWN",
@@ -95,8 +99,6 @@ Deno.serve(async (req) => {
       const now = new Date();
       const periodEnd = new Date(now);
       periodEnd.setMonth(periodEnd.getMonth() + 1);
-      const subscriptionToken = params.get("token");
-      if (!subscriptionToken) return text("Missing recurring subscription token", 400);
       const { error: txError } = await admin.from("vps_payment_transactions").upsert({
         order_id: order.id, provider: "payfast", provider_reference: paymentId,
         amount_minor: Math.round(gross * 100), currency: "ZAR", status: "paid",
