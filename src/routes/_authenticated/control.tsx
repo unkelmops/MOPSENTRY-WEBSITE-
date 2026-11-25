@@ -386,9 +386,7 @@ function Section({ title, value, children, icon: Icon, accent = "cyan", defaultO
       <div>{children}</div>
     </section>
   );
-}) {
-  const accents = {
-    cyan: "border-cyan-300/20 group-open:border-cyan-300/40 text-cyan-200",
+}
     violet: "border-violet-300/20 group-open:border-violet-300/40 text-violet-200",
     blue: "border-blue-300/20 group-open:border-blue-300/40 text-blue-200",
     emerald: "border-emerald-300/20 group-open:border-emerald-300/40 text-emerald-200",

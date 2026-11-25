@@ -296,7 +296,7 @@ function FundamentalEvents() {
                     {eventView === "released" && (
                       <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-primary">News result</p>
-                        <p className="mt-1 text-xs text-foreground">Actual vs expected. Bias is not an entry signal. the market reaction.</p>
+                        <p className="mt-1 text-xs text-foreground">Actual vs expected. Bias is not an entry signal.</p>
                       </div>
                     )}
                     <div className="mt-3 border-t pt-3">
