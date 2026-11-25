@@ -339,19 +339,43 @@ function Signals() {
   ];
 
   return (
-    <>
-    <div className="signals-page space-y-3 pb-2">
-      <section className="relative overflow-hidden rounded-2xl border border-sky-500/20 bg-[#05070b] px-4 py-4 shadow-[0_12px_40px_-25px_rgba(14,165,233,.35)]">
-        <div><p className="text-[9px] font-black uppercase tracking-[0.24em] text-sky-400">MOPSENTRY · MARKET DESK</p><h1 className="signals-hero-title mt-1 text-2xl font-black tracking-tight text-white">Signals<span className="text-sky-400">.</span></h1><p className="mt-1 text-[11px] text-slate-500">Market news and account activity</p></div>
-        <div className="flex shrink-0 flex-col gap-2 text-right text-[10px] text-slate-400">
-          <span>Live <b className="num text-primary">{live.length}</b></span>
-          <span>Pending <b className="num text-primary">{orders.length}</b></span>
-        </div>
-      </section>
+    <div className="relative mx-auto max-w-6xl space-y-5 pb-6">
+      <div className="pointer-events-none absolute -top-20 left-1/3 h-64 w-64 rounded-full bg-cyan-500/10 blur-[100px]" />
+      <div className="pointer-events-none absolute right-0 top-72 h-72 w-72 rounded-full bg-violet-500/[0.07] blur-[110px]" />
 
-      <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-white/10 bg-[#080b10] p-1.5 shadow-inner">
+      <header className="relative overflow-hidden rounded-3xl border border-sky-400/20 bg-[radial-gradient(ellipse_at_top_left,rgba(34,211,238,.15),transparent_48%),radial-gradient(ellipse_at_bottom_right,rgba(139,92,246,.13),transparent_48%),linear-gradient(135deg,hsl(var(--card)),rgba(7,16,33,.92))] p-5 shadow-[0_18px_65px_-35px_rgba(34,211,238,.45)] sm:p-6">
+        <div className="absolute right-5 top-5 hidden h-24 w-24 items-center justify-center rounded-full border border-cyan-300/10 sm:flex">
+          <div className="absolute inset-2 rounded-full border border-dashed border-violet-300/20" />
+          <Radio className="h-9 w-9 text-cyan-200/70" />
+        </div>
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.24em] text-cyan-300">
+          <Radio className="h-3.5 w-3.5" /> MOPSENTRY / MARKET INTELLIGENCE
+        </div>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-4 pr-0 sm:pr-28">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Signals<span className="text-cyan-300">.</span></h1>
+            <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">Market intelligence, important releases and account activity.</p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-sky-300/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-200">
+            <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-50" /><span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300" /></span>
+            Market desk
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-2 gap-2 sm:max-w-sm sm:gap-3">
+          <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-2.5 backdrop-blur-sm">
+            <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground"><ArrowUpRight className="h-3 w-3 text-cyan-300" />Open trades</div>
+            <p className="mt-1 text-sm font-black text-foreground sm:text-base">{live.length}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/15 px-3 py-2.5 backdrop-blur-sm">
+            <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground"><CalendarClock className="h-3 w-3 text-cyan-300" />Pending orders</div>
+            <p className="mt-1 text-sm font-black text-foreground sm:text-base">{orders.length}</p>
+          </div>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-3 gap-2 rounded-2xl border border-sky-300/20 bg-gradient-to-r from-sky-500/[0.07] via-card to-violet-500/[0.06] p-1.5 shadow-[0_10px_32px_-24px_rgba(34,211,238,.55)]">
         {tabs.map((tab) => (
-          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`rounded-lg px-2 py-2 text-xs font-medium transition-colors ${activeTab === tab.id ? "bg-sky-500/15 text-sky-300 ring-1 ring-sky-400/30 shadow-[0_0_18px_rgba(14,165,233,.12)]" : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-200"}`}>
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`rounded-xl px-2 py-2.5 text-xs font-bold transition-all ${activeTab === tab.id ? "border border-cyan-300/35 bg-cyan-300/10 text-cyan-100 shadow-[0_0_22px_-10px_rgba(34,211,238,.75)]" : "border border-transparent text-muted-foreground hover:border-white/10 hover:bg-white/[0.035] hover:text-foreground"}`}>
             {tab.label}{tab.count !== undefined && <span className="ml-1 opacity-70">{tab.count}</span>}
           </button>
         ))}
