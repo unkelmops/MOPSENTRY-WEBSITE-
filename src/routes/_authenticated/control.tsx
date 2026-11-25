@@ -12,7 +12,7 @@ import { robotSettingsQuery, saveRobotSettings, type RobotSettings } from "@/lib
 import { appAccessQuery } from "@/lib/app-access";
 import { tradingAccountQuery } from "@/lib/trading-account";
 import { cn } from "@/lib/utils";
-import { TIMEFRAMES } from "@/lib/robot-options";
+import { HIGHER_TIMEFRAMES, TIMEFRAMES } from "@/lib/robot-options";
 
 export const Route = createFileRoute("/_authenticated/control")({
   head: () => ({ meta: [{ title: "Robot control — MOPSENTRY EA" }] }),
@@ -65,6 +65,9 @@ function Control() {
   const settingsDirty =
     s.strategy !== savedSettings.strategy ||
     s.timeframe !== savedSettings.timeframe ||
+    s.higher_timeframe !== savedSettings.higher_timeframe ||
+    s.break_even_enabled !== savedSettings.break_even_enabled ||
+    Number(s.break_even_trigger) !== Number(savedSettings.break_even_trigger) ||
     s.scalper_frequency !== savedSettings.scalper_frequency ||
     Number(s.lot_size) !== Number(savedSettings.lot_size) ||
     Number(s.risk_percent) !== Number(savedSettings.risk_percent) ||
@@ -142,7 +145,22 @@ function Control() {
         </div>
       </Section>
 
-      <Section title="Requested timeframe" value={s.timeframe}>
+      <div className="grid gap-3 xl:grid-cols-2">
+      <Section title="Higher timeframe · HTF bias" value={s.higher_timeframe} className="border-cyan-400/30 bg-gradient-to-br from-card via-card to-cyan-500/[0.08]">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-[10px] font-bold tracking-wider text-cyan-300">HTF FILTER</span>
+          <span className="text-xs text-muted-foreground">Independent trend timeframe</span>
+        </div>
+        <p className="mb-3 text-xs leading-relaxed text-muted-foreground">Choose the higher timeframe used by the EA trend-bias filter. This does not change your requested entry/analysis timeframe.</p>
+        <div className="grid grid-cols-3 gap-2" role="group" aria-label="Higher timeframe">
+          {HIGHER_TIMEFRAMES.map((timeframe) => (
+            <Button key={timeframe} variant="outline" aria-pressed={s.higher_timeframe === timeframe} onClick={() => setS({ ...s, higher_timeframe: timeframe })} className={cn("num px-2", s.higher_timeframe === timeframe && "border-cyan-400 bg-cyan-400/10 text-cyan-300")}>
+              {timeframe}
+            </Button>
+          ))}
+        </div>
+      </Section>
+      <Section title="Requested timeframe" value={s.timeframe} className="border-primary/30 bg-gradient-to-br from-card via-card to-primary/[0.07]">
         <p className="mb-3 text-xs leading-relaxed text-muted-foreground">This preference is saved and included in the EA check-in response. The app cannot confirm that the EA has applied it because the current check-in protocol does not report an applied-timeframe acknowledgement. Treat it as pending until EA-side acknowledgement is added and verified.</p>
         <div className="grid grid-cols-4 gap-2" role="group" aria-label="Requested trading timeframe">
           {TIMEFRAMES.map((timeframe) => (
@@ -152,6 +170,7 @@ function Control() {
           ))}
         </div>
       </Section>
+      </div>
 
       {s.strategy === "scalp" && (
         <Section title="Scalper entry frequency">
@@ -167,18 +186,33 @@ function Control() {
         </Section>
       )}
 
+      <div className="grid gap-3 md:grid-cols-2">
       <Section title="Lot size" value={Number(s.lot_size).toFixed(2)}>
         <Slider min={0.01} max={1} step={0.01} value={[Number(s.lot_size)]} onValueChange={([v]) => setS({ ...s, lot_size: v ?? 0 })} />
       </Section>
       <Section title="Risk per trade" value={`${Number(s.risk_percent).toFixed(1)}%`}>
         <Slider min={0.1} max={5} step={0.1} value={[Number(s.risk_percent)]} onValueChange={([v]) => setS({ ...s, risk_percent: v ?? 0 })} />
       </Section>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
       <Section title="Maximum trades" value={String(s.max_trades)}>
         <Slider min={1} max={20} step={1} value={[s.max_trades]} onValueChange={([v]) => setS({ ...s, max_trades: v ?? 0 })} />
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           This is the EA's total trade cap, not an extra number of entries per setup. The EA must check its own open positions and pending orders for the symbol before placing any new order.
         </p>
       </Section>
+      <Section title="Break-even protection" value={s.break_even_enabled ? "ON" : "OFF"} className="border-emerald-400/25 bg-gradient-to-br from-card via-card to-emerald-500/[0.07]">
+        <div className="flex items-center justify-between gap-3">
+          <div><p className="text-sm font-semibold">Enable break-even</p><p className="mt-1 text-xs text-muted-foreground">Move the stop loss to entry after the selected floating-profit threshold.</p></div>
+          <Switch checked={s.break_even_enabled} onCheckedChange={(enabled) => setS({ ...s, break_even_enabled: enabled })} />
+        </div>
+        {s.break_even_enabled && <div className="mt-4 space-y-2">
+          <div className="flex items-center justify-between text-xs"><span className="text-muted-foreground">Floating-profit trigger</span><span className="num font-semibold text-emerald-300">{Number(s.break_even_trigger).toFixed(2)}</span></div>
+          <Slider min={1} max={1000} step={1} value={[Number(s.break_even_trigger)]} onValueChange={([v]) => setS({ ...s, break_even_trigger: v ?? 1 })} />
+        </div>}
+      </Section>
+      </div>
 
       <Section title="Pairs">
         <div className="flex flex-wrap gap-2">
@@ -210,7 +244,7 @@ function Control() {
         disabled={save.isPending || !settingsDirty}
         onClick={() =>
           save.mutate(
-            { strategy: s.strategy, timeframe: s.timeframe, scalper_frequency: s.scalper_frequency, lot_size: s.lot_size, risk_percent: s.risk_percent, max_trades: s.max_trades, pairs: s.pairs, alerts_enabled: s.alerts_enabled },
+            { strategy: s.strategy, timeframe: s.timeframe, higher_timeframe: s.higher_timeframe, scalper_frequency: s.scalper_frequency, lot_size: s.lot_size, risk_percent: s.risk_percent, max_trades: s.max_trades, pairs: s.pairs, alerts_enabled: s.alerts_enabled, break_even_enabled: s.break_even_enabled, break_even_trigger: s.break_even_trigger },
             { onSuccess: () => toast.success("Settings saved. You can now press Start.") },
           )
         }
@@ -221,9 +255,9 @@ function Control() {
   );
 }
 
-function Section({ title, value, children }: { title: string; value?: string; children: React.ReactNode }) {
+function Section({ title, value, children, className }: { title: string; value?: string; children: React.ReactNode; className?: string }) {
   return (
-    <details className="group overflow-hidden rounded-2xl border border-sky-300/15 bg-gradient-to-br from-card via-card to-slate-900/40 shadow-[0_10px_35px_-28px_rgba(56,189,248,.55)] transition-colors open:border-sky-300/35">
+    <details className={cn("group overflow-hidden rounded-2xl border border-sky-300/15 bg-gradient-to-br from-card via-card to-slate-900/40 shadow-[0_10px_35px_-28px_rgba(56,189,248,.55)] transition-colors open:border-sky-300/35", className)}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-gradient-to-br from-cyan-300 to-violet-400 shadow-[0_0_12px_rgba(56,189,248,.65)]" /><span className="font-semibold">{title}</span></span>
         <span className="flex items-center gap-2 text-muted-foreground">

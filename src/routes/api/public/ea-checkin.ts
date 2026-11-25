@@ -167,7 +167,7 @@ export const Route = createFileRoute("/api/public/ea-checkin")({
         // Return the user's current controls plus one pending app command.
         const { data: settings, error: settingsError } = await supabaseAdmin
           .from("robot_settings")
-          .select("is_running, strategy, timeframe, scalper_frequency, lot_size, risk_percent, max_trades, pairs, alerts_enabled")
+          .select("is_running, strategy, timeframe, higher_timeframe, scalper_frequency, lot_size, risk_percent, max_trades, pairs, alerts_enabled, break_even_enabled, break_even_trigger")
           .eq("user_id", data.user_id)
           .maybeSingle();
 

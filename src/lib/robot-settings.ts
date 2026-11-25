@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { scalperFrequencySchema, timeframeSchema } from "./robot-options";
+import { higherTimeframeSchema, scalperFrequencySchema, timeframeSchema } from "./robot-options";
 
 export type RobotSettings = Database["public"]["Tables"]["robot_settings"]["Row"];
 
@@ -30,6 +30,8 @@ export const robotSettingsQuery = queryOptions({
 
 export async function saveRobotSettings(patch: Partial<RobotSettings>) {
   if (patch.timeframe !== undefined) timeframeSchema.parse(patch.timeframe);
+  if (patch.higher_timeframe !== undefined) higherTimeframeSchema.parse(patch.higher_timeframe);
+  if (patch.break_even_trigger !== undefined && (!Number.isFinite(Number(patch.break_even_trigger)) || Number(patch.break_even_trigger) <= 0)) throw new Error("Break-even trigger must be greater than zero.");
   if (patch.scalper_frequency !== undefined) scalperFrequencySchema.parse(patch.scalper_frequency);
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Please sign in again.");

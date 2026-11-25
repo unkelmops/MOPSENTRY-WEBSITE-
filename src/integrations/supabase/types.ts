@@ -709,6 +709,7 @@ export type Database = {
           scalper_frequency: string
           strategy: string
           timeframe: string
+          higher_timeframe: string
           updated_at: string
           user_id: string
         }
@@ -724,6 +725,7 @@ export type Database = {
           scalper_frequency?: string
           strategy?: string
           timeframe?: string
+          higher_timeframe?: string
           updated_at?: string
           user_id: string
         }
@@ -739,6 +741,7 @@ export type Database = {
           scalper_frequency?: string
           strategy?: string
           timeframe?: string
+          higher_timeframe?: string
           updated_at?: string
           user_id?: string
         }

@@ -158,7 +158,7 @@ function Dashboard() {
   const fresh = Boolean(
     ta.status === "connected" && ta.balance != null && Number.isFinite(heartbeatAge) && heartbeatAge >= 0 && heartbeatAge < 30_000,
   );
-  const compatibleEA = fresh && ta.ea_version === "1.73";
+  const compatibleEA = fresh && ta.ea_version === "1.76";
   const balance = fresh ? Number(ta.balance) : null;
   const equity = fresh ? Number(ta.equity ?? ta.balance) : null;
   const floatingPnl = balance != null && equity != null ? equity - balance : null;
@@ -182,7 +182,7 @@ function Dashboard() {
       const { data: auth, error: authError } = await supabase.auth.getUser();
       if (authError || !auth.user) throw new Error("Please sign in again before sending a trading command.");
       if (!fresh) throw new Error("MT5 connection is not fresh. Reconnect before sending Close All.");
-      if (!compatibleEA) throw new Error("Install and compile MOPSENTRY EA v1.73 first. Older versions cannot receive this app command.");
+      if (!compatibleEA) throw new Error("Install and compile MOPSENTRY EA v1.76 first. Older versions cannot receive this app command.");
       if (rawTrades.length === 0) throw new Error("MT5 reports no open positions.");
       const { data: existingCommand, error: existingCommandError } = await supabase
         .from("robot_commands")
@@ -308,7 +308,7 @@ function Dashboard() {
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
           <Activity className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-muted-foreground">
-            Update MT5 to MOPSENTRY EA v1.73 to enable Close All and full-account pending-order sync. The current EA version does not identify itself as compatible yet.
+            Update MT5 to MOPSENTRY EA v1.76 to enable Close All and full-account pending-order sync. The current EA version does not identify itself as compatible yet.
           </p>
         </div>
       )}
