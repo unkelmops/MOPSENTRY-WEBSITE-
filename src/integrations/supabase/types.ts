@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      mopsentry_activity_log: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          message: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          message: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          message?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_access_entitlements: {
         Row: {
           enabled: boolean
