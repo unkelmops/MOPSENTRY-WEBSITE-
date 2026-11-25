@@ -100,5 +100,18 @@ comment on table public.vps_orders is 'MOPSENTRY-managed VPS customer subscripti
 comment on table public.vps_instances is 'One managed Windows VPS assignment per VPS order; credentials must never be stored in this table.';
 comment on table public.vps_payment_events is 'Verified provider webhook event ledger; service-role access only.';
 
--- PayFast recurring subscription token is stored only server-side.
-alter table public.vps_orders add column if not exists provider_subscription_token text;
+-- Keep the PayFast subscription token outside the customer-readable public schema.
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+create table if not exists private.vps_provider_subscriptions (
+  order_id uuid primary key references public.vps_orders(id) on delete cascade,
+  provider text not null check (provider = 'payfast'),
+  subscription_token text not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table private.vps_provider_subscriptions enable row level security;
+revoke all on private.vps_provider_subscriptions from public, anon, authenticated;
+grant all on private.vps_provider_subscriptions to service_role;
+comment on table private.vps_provider_subscriptions is 'Private PayFast subscription tokens. Never expose through the customer Data API.';
