@@ -40,6 +40,9 @@ Deno.serve(async (req) => {
     if (currentError) throw currentError;
     if (current) return json({ error: "You already have a VPS subscription or an unfinished order. Contact MOPSENTRY support to continue." }, 409);
 
+    if (Deno.env.get("VPS_CHECKOUT_ENABLED") !== "true") {
+      return json({ error: "VPS checkout is not open yet. MOPSENTRY is completing reseller and payment setup." }, 503);
+    }
     const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID");
     const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY");
     const passphrase = Deno.env.get("PAYFAST_PASSPHRASE");
@@ -66,7 +69,7 @@ Deno.serve(async (req) => {
       throw transactionError;
     }
 
-    const sandbox = Deno.env.get("PAYFAST_SANDBOX") === "true";
+    const sandbox = Deno.env.get("PAYFAST_SANDBOX") !== "false";
     const base = sandbox ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za";
     const fields: Record<string, string> = {
       merchant_id: merchantId,
