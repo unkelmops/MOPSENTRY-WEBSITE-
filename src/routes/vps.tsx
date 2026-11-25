@@ -165,8 +165,7 @@ function VpsPage() {
                 <ul className="mt-4 space-y-2 text-xs text-slate-300">
                   {["Genuine Windows Server licence", "RDP and Administrator access", "NVMe storage and 1 Gbps uplink", "DDoS protection and 24/7 support", "MOPSENTRY setup coordination"].map((item) => <li key={item} className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" />{item}</li>)}
                 </ul>
-                <p className="mt-4 text-[10px] leading-4 text-slate-500"></p>
-                <Button onClick={() => toast.message("VPS ordering will open after FxSVPS confirms MOPSENTRY's reseller pricing and provisioning workflow.")} variant="outline" className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
+                <Button onClick={() => toast.message("VPS ordering will open once MOPSENTRY finalises hosting and fulfilment arrangements.")} variant="outline" className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
                   {signedIn ? "Select package · opening soon" : "Sign in to select"}
                 </Button>
               </article>
