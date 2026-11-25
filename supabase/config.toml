@@ -1,1 +1,7 @@
 project_id = "zykswpgxfmpjllnlivkd"
+
+[functions.mopsentry-vps-checkout]
+verify_jwt = true
+
+[functions.mopsentry-payfast-itn]
+verify_jwt = false
