@@ -60,6 +60,21 @@ function AppLayout() {
                 <p className="mb-2 text-sm font-medium">Theme</p>
                 <ThemePicker />
               </section>
+              <section>
+                <label htmlFor="mopsentry-display-currency" className="mb-2 block text-sm font-medium">Display currency</label>
+                <select
+                  id="mopsentry-display-currency"
+                  value={currency}
+                  onChange={(event) => changeCurrency(event.target.value)}
+                  className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+                >
+                  <option value="ZAR">South African Rand (R)</option>
+                  <option value="USD">US Dollar ($)</option>
+                  <option value="EUR">Euro (€)</option>
+                  <option value="GBP">Pound Sterling (£)</option>
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">Account amounts are converted for display when a current exchange rate is available.</p>
+              </section>
               <Link
                 to="/vps"
                 className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm transition-colors hover:bg-accent"
