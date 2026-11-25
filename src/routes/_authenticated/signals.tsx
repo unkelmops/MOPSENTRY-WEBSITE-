@@ -73,14 +73,14 @@ function SignalSummary({ direction, actualDirection }: {
   return (
     <div className="mt-2 grid grid-cols-2 gap-2">
       <div className={`rounded-xl border p-3 ${tone}`}>
-        <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">USD bias</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">USD direction</p>
         <p className="mt-1 text-sm font-black">{usdSide}</p>
       </div>
       <div className={`rounded-xl border p-3 ${tone}`}>
-        <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Gold bias</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Gold direction</p>
         <p className="mt-1 text-sm font-black">{goldSide}</p>
       </div>
-      <p className="col-span-2 text-[10px] text-muted-foreground">News direction only. Confirm with price action.</p>
+      <p className="col-span-2 text-[10px] text-muted-foreground">News gives a possible direction. Check the chart before acting.</p>
     </div>
   );
 }
@@ -174,8 +174,8 @@ function FundamentalEvents() {
     <section className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 font-semibold"><Newspaper className="h-4 w-4 text-primary" />Economic events</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Released events remain available for review.</p>
+          <h2 className="flex items-center gap-2 font-semibold"><Newspaper className="h-4 w-4 text-primary" />Market news</h2>
+          <p className="mt-1 text-xs text-muted-foreground">See what the news could mean for USD and Gold.</p>
         </div>
         <button type="button" onClick={() => void calendar.refetch()} disabled={calendar.isFetching} aria-label="Refresh events" className="rounded-lg border p-2 text-muted-foreground disabled:opacity-50">
           <RefreshCw className={`h-4 w-4 ${calendar.isFetching ? "animate-spin" : ""}`} />
@@ -208,10 +208,10 @@ function FundamentalEvents() {
         <>
           {!selectedGroup ? (
             <>
-              <div className="rounded-xl border bg-card p-3">
+              <div className="rounded-xl border border-primary/15 bg-card/90 p-3 shadow-[0_10px_30px_-26px_rgba(34,211,238,.6)]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Overall USD outlook</p>
+                    <p className="text-xs text-muted-foreground">USD outlook</p>
                     <p className="mt-1 font-semibold">{directionLabel(outlook.direction)}</p>
                   </div>
                   <span className={`rounded-md px-2 py-1 text-[10px] font-semibold ${directionStyle(outlook.direction)}`}>{outlook.scoredCount} analysed</span>
@@ -219,8 +219,8 @@ function FundamentalEvents() {
                 <p className="mt-1 text-xs text-muted-foreground">{goldMeaning(outlook.direction)}</p>
               </div>
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">{eventView === "upcoming" ? "Upcoming economic calendar" : "Released news and post-news bias"}</h3>
-                <span className="text-xs text-muted-foreground">Tap a month to expand</span>
+                <h3 className="text-sm font-semibold">{eventView === "upcoming" ? "Upcoming news" : "Past news"}</h3>
+                <span className="text-xs text-muted-foreground">Choose a month</span>
               </div>
               {monthGroups.length === 0 ? (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">{eventView === "upcoming" ? "No upcoming high-impact USD events were returned." : "No released events with recorded actual figures are available yet. Past releases will stay here once collected."}</div>
@@ -247,7 +247,7 @@ function FundamentalEvents() {
                               <p className="mt-1 text-xs text-muted-foreground">{items.length === 1 ? items[0]?.title : `${items.length} related figures combined`}</p>
                               <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{next ? formatSast(next.time) : ""}</span>
-                                <span className="inline-flex items-center gap-1 text-primary">View combined signal <ChevronDown className="h-3.5 w-3.5 -rotate-90" /></span>
+                                <span className="inline-flex items-center gap-1 text-primary">See impact <ChevronDown className="h-3.5 w-3.5 -rotate-90" /></span>
                               </div>
                             </button>
                           );
@@ -295,18 +295,18 @@ function FundamentalEvents() {
 
                     {eventView === "released" && (
                       <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Post-news assessment</p>
-                        <p className="mt-1 text-xs text-foreground">Actual result compared with forecast. The USD and XAUUSD bias is shown in the event-group analysis above; it is not a confirmed entry. Wait for price action to confirm the market reaction.</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">What the result means</p>
+                        <p className="mt-1 text-xs text-foreground">Compare the actual number with the expected number. This is not an entry signal. Check how price reacts.</p>
                       </div>
                     )}
                     <div className="mt-3 border-t pt-3">
-                      <p className="text-[11px] font-semibold text-muted-foreground">Past results</p>
+                      <p className="text-[11px] font-semibold text-muted-foreground">Previous releases</p>
                       {past.length ? past.map((item) => (
                         <div key={item.event_id} className="mt-1 flex justify-between gap-2 text-xs">
                           <span className="text-muted-foreground">{item.period || formatSast(item.event_time)}</span>
                           <span className="font-mono">Actual {item.actual_value}</span>
                         </div>
-                      )) : <p className="mt-1 text-xs text-muted-foreground">{history.isError ? "Past results are unavailable." : "Past results will appear here as MOPSENTRY collects them."}</p>}
+                      )) : <p className="mt-1 text-xs text-muted-foreground">{history.isError ? "Past results are unavailable." : "Earlier results will show here when available."}</p>}
                     </div>
                   </article>
                 );
@@ -326,7 +326,7 @@ function Signals() {
 
   const tabs = [
     { id: "news" as const, label: "News", count: undefined },
-    { id: "trades" as const, label: "Live trades", count: live.length },
+    { id: "trades" as const, label: "Open trades", count: live.length },
     { id: "orders" as const, label: "Pending", count: orders.length },
   ];
 
@@ -357,7 +357,7 @@ function Signals() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-400">MOPSENTRY · TRADE TERMINAL</p>
               <h2 className="mt-1 text-lg font-black tracking-tight">Trade</h2>
-              <p className="text-[10px] text-slate-400">Account overview · live positions</p>
+              <p className="text-[10px] text-slate-400">Your open positions</p>
             </div>
             <span className="rounded-lg border border-sky-700/70 bg-sky-950/70 px-3 py-2 text-[10px] font-black text-sky-300">{live.length} OPEN</span>
           </div>
@@ -374,19 +374,19 @@ function Signals() {
           </div>
 
           <div className="flex items-center justify-between border-b border-sky-900/70 bg-[#0d2234] px-4 py-2.5">
-            <span className="text-xs font-semibold text-slate-300">Floating P/L</span>
+            <span className="text-xs font-semibold text-slate-300">Open profit / loss</span>
             <span className={`font-mono text-sm font-black tabular-nums ${live.some(t => typeof t.profit === "number") ? (live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0) >= 0 ? "text-emerald-400" : "text-rose-400") : "text-slate-400"}`}>
               {live.some(t => typeof t.profit === "number") ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(live.reduce((sum, t) => sum + (typeof t.profit === "number" ? t.profit : 0), 0)) : "—"}
             </span>
           </div>
 
           <div className="grid grid-cols-[1.15fr_.65fr_.9fr_.9fr] gap-2 border-b border-sky-900/70 bg-[#102a40] px-3 py-2 text-[8px] font-black uppercase tracking-wider text-sky-200/70">
-            <span>Symbol / type</span><span className="text-right">Volume</span><span className="text-right">Open price</span><span className="text-right">Current</span>
+            <span>Market</span><span className="text-right">Size</span><span className="text-right">Entry</span><span className="text-right">Price now</span>
           </div>
           {live.length === 0 ? (
             <div className="p-7 text-center">
               <p className="text-sm font-semibold text-slate-200">No open positions</p>
-              <p className="mt-1 text-xs text-slate-400">Live positions reported by the EA will appear here.</p>
+              <p className="mt-1 text-xs text-slate-400">Your open trades will appear here.</p>
             </div>
           ) : live.map((trade, index) => {
             const buy = trade.side !== "SELL";
@@ -403,24 +403,24 @@ function Signals() {
                   <span className="text-right font-mono text-xs tabular-nums text-slate-200">{typeof trade.current_price === "number" ? trade.current_price.toFixed(2) : "—"}</span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-dashed border-sky-900/70 pt-2 text-[10px]">
-                  <span className="text-slate-400">S/L {typeof trade.sl === "number" ? trade.sl.toFixed(2) : "—"} · T/P {typeof trade.tp === "number" ? trade.tp.toFixed(2) : "—"}</span>
+                  <span className="text-slate-400">Stop {typeof trade.sl === "number" ? trade.sl.toFixed(2) : "—"} · Target {typeof trade.tp === "number" ? trade.tp.toFixed(2) : "—"}</span>
                   <span className={`font-mono font-bold ${profitKnown ? (trade.profit! >= 0 ? "text-emerald-400" : "text-rose-400") : "text-slate-400"}`}>{profitKnown ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: ta?.account_currency || "ZAR", maximumFractionDigits: 2 }).format(trade.profit!) : "P/L —"}</span>
                 </div>
               </div>
             );
           })}
-          <p className="border-t border-sky-900/70 bg-[#081a29] px-3 py-2.5 text-[9px] text-slate-400">Read-only terminal snapshot · updated from the connected EA</p>
+          <p className="border-t border-sky-900/70 bg-[#081a29] px-3 py-2.5 text-[9px] text-slate-400">Live account snapshot</p>
         </section>
       )}
 
       {activeTab === "orders" && (
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold">Pending orders</h2>
+            <h2 className="font-semibold">Waiting orders</h2>
             <span className="text-xs text-muted-foreground">{orders.length} waiting</span>
           </div>
           {orders.length === 0 ? (
-            <div className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm text-muted-foreground"><BellRing className="h-4 w-4" />No pending orders.</div>
+            <div className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm text-muted-foreground"><BellRing className="h-4 w-4" />No waiting orders right now.</div>
           ) : orders.map((order) => (
             <div key={order.ticket} className="rounded-xl border bg-card p-3">
               <p className="font-semibold">{order.symbol} · {order.type.replace(/_/g, " ")}</p>
@@ -436,7 +436,7 @@ function Signals() {
 
       <div className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>News signals are possibilities, not guarantees. The actual result and market reaction can differ. This feature does not place trades.</p>
+        <p>News can move differently than expected. These updates do not place trades.</p>
       </div>
     </div>
     </>
