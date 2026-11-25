@@ -88,11 +88,6 @@ Deno.serve(async (req) => {
       periodEnd.setMonth(periodEnd.getMonth() + 1);
       const subscriptionToken = params.get("token");
       if (!subscriptionToken) return text("Missing recurring subscription token", 400);
-      const { error: tokenError } = await admin.schema("private").from("vps_provider_subscriptions").upsert({
-        order_id: order.id, provider: "payfast", subscription_token: subscriptionToken,
-        status: "active", updated_at: now.toISOString(),
-      }, { onConflict: "order_id" });
-      if (tokenError) throw tokenError;
       const { error: txError } = await admin.from("vps_payment_transactions").upsert({
         order_id: order.id, provider: "payfast", provider_reference: paymentId,
         amount_minor: Math.round(gross * 100), currency: "ZAR", status: "paid",
