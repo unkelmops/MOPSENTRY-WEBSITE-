@@ -126,7 +126,7 @@ Deno.serve(async (req: Request) => {
   if (commandError) return json({ ok: false, error: "command_lookup_failed" }, 500);
 
   const { data: settings, error: settingsError } = await supabase.from("robot_settings")
-    .select("is_running,strategy,timeframe,scalper_frequency,lot_size,risk_percent,max_trades,pairs,alerts_enabled,break_even_enabled,break_even_trigger")
+    .select("is_running,strategy,timeframe,higher_timeframe,scalper_frequency,lot_size,risk_percent,max_trades,pairs,alerts_enabled,break_even_enabled,break_even_trigger")
     .eq("user_id", account.user_id).maybeSingle();
   if (settingsError) return json({ ok: false, error: "settings_lookup_failed" }, 500);
 
@@ -134,6 +134,7 @@ Deno.serve(async (req: Request) => {
     is_running: settings?.is_running ?? false,
     strategy: settings?.strategy ?? "trend",
     timeframe: settings?.timeframe ?? "M5",
+    higher_timeframe: settings?.higher_timeframe ?? "H4",
     scalper_frequency: settings?.scalper_frequency ?? "standard",
     lot_size: settings?.lot_size ?? 0.10,
     risk_percent: settings?.risk_percent ?? 1.0,
@@ -150,6 +151,7 @@ Deno.serve(async (req: Request) => {
     running: settingsPayload.is_running,
     strategy: settingsPayload.strategy,
     timeframe: settingsPayload.timeframe,
+    higher_timeframe: settingsPayload.higher_timeframe,
     scalper_frequency: settingsPayload.scalper_frequency,
     lot_size: settingsPayload.lot_size,
     risk_percent: settingsPayload.risk_percent,
