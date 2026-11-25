@@ -1,0 +1,131 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import CryptoJS from "npm:crypto-js@4.2.0";
+
+function encode(value: string) {
+  return encodeURIComponent(value.trim()).replace(/%[0-9a-f]{2}/gi, (v) => v.toUpperCase()).replace(/%20/g, "+");
+}
+function verifySignature(params: URLSearchParams, passphrase: string) {
+  const pairs: string[] = [];
+  for (const [key, value] of params.entries()) {
+    if (key === "signature" || value === "") continue;
+    pairs.push(`${key}=${encode(value)}`);
+  }
+  const source = pairs.join("&") + (passphrase ? `&passphrase=${encode(passphrase)}` : "");
+  return CryptoJS.MD5(source).toString() === (params.get("signature") ?? "").toLowerCase();
+}
+function text(body: string, status = 200) {
+  return new Response(body, { status, headers: { "Content-Type": "text/plain" } });
+}
+function ipNumber(ip: string): number | null {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return null;
+  return (((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3]) >>> 0;
+}
+function inCidr(ip: string, cidr: string): boolean {
+  const [network, prefixText] = cidr.split("/");
+  const value = ipNumber(ip);
+  const base = ipNumber(network);
+  const prefix = Number(prefixText);
+  if (value === null || base === null || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
+  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  return (value & mask) === (base & mask);
+}
+function isPayfastIp(ip: string): boolean {
+  return [
+    "197.97.145.144/28",
+    "41.74.179.192/27",
+    "102.216.36.0/28",
+    "102.216.36.128/28",
+    "144.126.193.139/32",
+    "13.245.74.88/32",
+    "3.163.232.237/32", "3.163.233.237/32", "3.163.234.237/32",
+    "3.163.235.237/32", "3.163.236.237/32", "3.163.237.237/32",
+    "3.163.238.237/32", "3.163.239.237/32", "3.163.240.237/32",
+    "3.163.241.237/32", "3.163.242.237/32", "3.163.243.237/32",
+    "3.163.244.237/32", "3.163.245.237/32", "3.163.246.237/32",
+    "3.163.247.237/32", "3.163.248.237/32", "3.163.249.237/32",
+    "3.163.250.237/32", "3.163.251.237/32", "3.163.252.237/32",
+    "34.107.176.71/32", "34.120.184.229/32",
+  ].some((range) => inCidr(ip, range));
+}
+
+Deno.serve(async (req) => {
+  if (req.method !== "POST") return text("Method not allowed", 405);
+  try {
+    const raw = await req.text();
+    const params = new URLSearchParams(raw);
+    const passphrase = Deno.env.get("PAYFAST_PASSPHRASE");
+    const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID");
+    if (!passphrase || !merchantId) return text("Payment verification is not configured", 503);
+    if (!verifySignature(params, passphrase)) return text("Invalid signature", 400);
+    if (params.get("merchant_id") !== merchantId) return text("Invalid merchant", 400);
+    const sourceIp = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip");
+    if (Deno.env.get("PAYFAST_SANDBOX") === "false" && (!sourceIp || !isPayfastIp(sourceIp))) {
+      return text("Untrusted notification source", 403);
+    }
+
+    const sandbox = Deno.env.get("PAYFAST_SANDBOX") !== "false";
+    const validationUrl = sandbox
+      ? "https://sandbox.payfast.co.za/eng/query/validate"
+      : "https://www.payfast.co.za/eng/query/validate";
+    const validationParams = new URLSearchParams();
+    for (const [key, value] of params.entries()) {
+      if (key !== "signature") validationParams.append(key, value);
+    }
+    const validationBody = [...validationParams.entries()]
+      .map(([key, value]) => `${key}=${encode(value)}`)
+      .join("&");
+    const validation = await fetch(validationUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: validationBody,
+    });
+    if (!validation.ok || (await validation.text()).trim() !== "VALID") return text("PayFast validation failed", 400);
+
+    const orderId = params.get("m_payment_id");
+    const paymentId = params.get("pf_payment_id");
+    const status = params.get("payment_status");
+    const gross = Number(params.get("amount_gross") ?? params.get("amount"));
+    if (!orderId || !paymentId || !status) return text("Missing payment reference", 400);
+
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    const { data: order, error: orderError } = await admin.from("vps_orders").select("id,user_id,amount_minor,status").eq("id", orderId).maybeSingle();
+    if (orderError || !order) return text("Unknown order", 404);
+    if (status === "COMPLETE" && (!Number.isFinite(gross) || Math.abs(Math.round(gross * 100) - order.amount_minor) > 1)) {
+      return text("Payment amount mismatch", 400);
+    }
+    const subscriptionToken = status === "COMPLETE" ? params.get("token") : null;
+    if (status === "COMPLETE" && !subscriptionToken) return text("Missing recurring subscription token", 400);
+
+    const { error: eventError } = await admin.from("vps_payment_events").upsert({
+      provider: "payfast", provider_event_id: paymentId, event_type: status ?? "UNKNOWN",
+      payload: Object.fromEntries(params.entries()), processed_at: new Date().toISOString(),
+    }, { onConflict: "provider,provider_event_id", ignoreDuplicates: true });
+    if (eventError) throw eventError;
+
+    if (status === "COMPLETE") {
+      const now = new Date();
+      const periodEnd = new Date(now);
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      const { error: txError } = await admin.from("vps_payment_transactions").upsert({
+        order_id: order.id, provider: "payfast", provider_reference: paymentId,
+        amount_minor: Math.round(gross * 100), currency: "ZAR", status: "paid",
+        idempotency_key: `payfast:${paymentId}`, paid_at: now.toISOString(),
+      }, { onConflict: "idempotency_key" });
+      if (txError) throw txError;
+      const { error: updateError } = await admin.from("vps_orders").update({
+        status: order.status === "active" ? "active" : "paid", provider_payment_id: paymentId,
+        current_period_start: now.toISOString(), current_period_end: periodEnd.toISOString(), updated_at: now.toISOString(),
+      }).eq("id", order.id);
+      if (updateError) throw updateError;
+    } else if (status === "CANCELLED") {
+      const { error: updateError } = await admin.from("vps_orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", order.id);
+      if (updateError) throw updateError;
+    }
+    return text("OK");
+  } catch (error) {
+    console.error("PayFast ITN error", error);
+    return text("Unable to process notification", 500);
+  }
+});

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Bot, Radio, Link2, LogOut, MoreVertical, UserRound, BrainCircuit } from "lucide-react";
+import { LayoutDashboard, Bot, Radio, Link2, LogOut, MoreVertical, UserRound, BrainCircuit, Server } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ThemePicker } from "@/components/theme-picker";
 import { useEffect, useState } from "react";
@@ -60,6 +60,14 @@ function AppLayout() {
                 <p className="mb-2 text-sm font-medium">Theme</p>
                 <ThemePicker />
               </section>
+              <Link
+                to="/vps"
+                className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm transition-colors hover:bg-accent"
+              >
+                <Server className="h-4 w-4 text-primary" />
+                <span><span className="block font-medium">VPS subscription</span><span className="text-xs text-muted-foreground">Plans, payment, setup and service status</span></span>
+                <Link2 className="ml-auto h-4 w-4 text-muted-foreground" />
+              </Link>
               <Link
                 to="/account"
                 className="flex items-center gap-3 rounded-xl border bg-card p-3 text-sm transition-colors hover:bg-accent"

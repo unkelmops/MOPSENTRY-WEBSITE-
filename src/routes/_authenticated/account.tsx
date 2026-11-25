@@ -29,7 +29,7 @@ const setupSteps = [
   {
     icon: MonitorDown,
     title: "MetaTrader + MOPSENTRY EA",
-    text: "We log into your broker account and attach the robot to your charts.",
+    text: "You sign in to your own broker account in MT5 and attach the robot to your chart. MOPSENTRY never needs your broker password.",
   },
   {
     icon: KeyRound,
