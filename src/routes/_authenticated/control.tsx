@@ -112,7 +112,6 @@ function Control() {
 
   const heartbeatAt = account?.last_heartbeat ? new Date(account.last_heartbeat).getTime() : 0;
   const connectionReady = account?.status === "connected" && Number.isFinite(heartbeatAt) && Date.now() - heartbeatAt >= 0 && Date.now() - heartbeatAt < 30_000;
-  const canStart = hasAppAccess === true && connectionReady && vpsReady === true;
   const selectedStrategy = strategies.find((st) => st.id === s.strategy) ?? strategies[0];
 
   const toggleRun = () => {
@@ -200,7 +199,7 @@ function Control() {
           </div>
           <Button
             onClick={toggleRun}
-            disabled={save.isPending || (!s.is_running && (settingsDirty || accessLoading || hasAppAccess !== true || vpsLoading || vpsStatusError || (vpsReady === true && !connectionReady)))}
+            disabled={save.isPending || (!s.is_running && (vpsLoading || vpsStatusError || (vpsReady !== false && (settingsDirty || accessLoading || hasAppAccess !== true || (vpsReady === true && !connectionReady)))))}
             title={s.is_running ? "Stop MOPSENTRY" : vpsReady === false ? "Choose a MOPSENTRY VPS subscription first." : hasAppAccess !== true ? "App Access is required to start." : !connectionReady ? "A fresh MT5/EA connection is required to start." : "Start MOPSENTRY"}
             className={cn(
               "h-12 min-w-36 rounded-xl px-6 font-bold tracking-wide shadow-lg transition-all",
