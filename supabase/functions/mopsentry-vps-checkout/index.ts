@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
     const amountMinor = Number(Deno.env.get("VPS_MONTHLY_AMOUNT_MINOR") ?? "20000");
     if (!Number.isInteger(amountMinor) || amountMinor < 500) return json({ error: "The VPS package price is not configured correctly." }, 500);
     const amount = (amountMinor / 100).toFixed(2);
+    const email = userData.user.email ?? "";
+    if (!email) return json({ error: "Add an email address to your MOPSENTRY account before checkout." }, 400);
     const { data: order, error: orderError } = await admin.from("vps_orders").insert({
       user_id: userData.user.id, product_code: "managed_vps_monthly", amount_minor: amountMinor,
       currency: "ZAR", billing_interval: "month", status: "pending_payment", payment_provider: "payfast",
@@ -65,8 +67,6 @@ Deno.serve(async (req) => {
 
     const sandbox = Deno.env.get("PAYFAST_SANDBOX") === "true";
     const base = sandbox ? "https://sandbox.payfast.co.za" : "https://www.payfast.co.za";
-    const email = userData.user.email ?? "";
-    if (!email) return json({ error: "Add an email address to your MOPSENTRY account before checkout." }, 400);
     const fields: Record<string, string> = {
       merchant_id: merchantId,
       merchant_key: merchantKey,
