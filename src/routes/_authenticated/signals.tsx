@@ -90,6 +90,7 @@ function getEventGroup(title: string) {
   if (/consumer price index|\bcpi\b/.test(value)) return "CPI";
   if (/producer price index|\bppi\b/.test(value)) return "PPI";
   if (/non.?farm payroll|payroll employment|employment change|unemployment rate|average hourly earnings|wage growth/.test(value)) return "NFP";
+  if (/adp .*employment|adp national employment|adp employment change/.test(value)) return "ADP";
   if (/fomc|federal funds rate|fed funds|interest rate decision|target rate|monetary policy statement|fed chair.*press conference/.test(value)) return "FOMC";
   if (/gross domestic product|\bgdp\b/.test(value)) return "GDP";
   if (/personal consumption expenditures|\bpce\b/.test(value)) return "PCE Inflation";
@@ -97,6 +98,12 @@ function getEventGroup(title: string) {
   if (/initial jobless claims|continuing jobless claims|unemployment claims/.test(value)) return "Jobless Claims";
   if (/ism .*pmi|manufacturing index|services index/.test(value)) return "ISM PMI";
   return title;
+}
+
+const PRIORITY_NEWS_GROUPS = new Set(["NFP", "CPI", "FOMC", "PPI", "ADP"]);
+
+function isPriorityNews(title: string) {
+  return PRIORITY_NEWS_GROUPS.has(getEventGroup(title));
 }
 
 function FundamentalEvents() {
@@ -123,7 +130,7 @@ function FundamentalEvents() {
   });
 
   const events = (calendar.data?.events ?? [])
-    .filter((event) => event.currency === "USD" && event.impact === "high")
+    .filter((event) => event.currency === "USD" && event.impact === "high" && isPriorityNews(event.title))
     .sort((a, b) => a.ts - b.ts);
   const upcoming = events.filter((event) => event.ts * 1000 > Date.now());
   const archived = history.data?.events ?? [];
@@ -142,6 +149,7 @@ function FundamentalEvents() {
       status: "released",
       ...(item.period == null ? {} : { period: item.period }),
     }))
+    .filter((event) => isPriorityNews(event.title))
     .sort((a, b) => b.ts - a.ts);
   const visibleEvents = eventView === "upcoming" ? upcoming : released;
   const outlook = buildFundamentalOutlook(visibleEvents, archived);
