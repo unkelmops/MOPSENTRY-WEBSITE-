@@ -2,8 +2,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import CryptoJS from "npm:crypto-js@4.2.0";
 
+const configuredSiteUrl = Deno.env.get("MOPSENTRY_SITE_URL") ?? "https://unkelmops.github.io/MOPSENTRY-WEBSITE";
 const cors = {
-  "Access-Control-Allow-Origin": Deno.env.get("MOPSENTRY_SITE_URL") ?? "https://unkelmops.github.io",
+  "Access-Control-Allow-Origin": new URL(configuredSiteUrl).origin,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -83,6 +84,9 @@ Deno.serve(async (req) => {
       recurring_amount: amount,
       frequency: "3",
       cycles: "0",
+      subscription_notify_email: "true",
+      subscription_notify_webhook: "true",
+      subscription_notify_buyer: "true",
     };
     fields.signature = signature(fields, passphrase);
     return json({ action: `${base}/eng/process`, fields, order_id: order.id });
