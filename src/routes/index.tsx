@@ -179,7 +179,7 @@ function Index() {
                 <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" /> Initial VPS configuration assistance</li>
                 <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" /> One payment for the three-month period</li>
               </ul>
-              <div className="mt-auto pt-7"><Button asChild variant="outline" className="w-full rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"><a href="#how-it-works">Enquire about VPS <ArrowRight className="ml-2 h-4 w-4" /></a></Button></div>
+              <div className="mt-auto pt-7"><Button asChild variant="outline" className="w-full rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/vps">Explore managed VPS <ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div>
             </article>
           </div>
           <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-4">
