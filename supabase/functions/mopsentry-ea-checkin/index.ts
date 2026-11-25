@@ -147,6 +147,8 @@ Deno.serve(async (req: Request) => {
 
   return json({
     ok: true,
+    // v1.76 expects this flag; maintenance mode is not configured, so keep trading enabled.
+    maintenance_mode: false,
     // Keep legacy top-level fields so older EA builds remain compatible.
     running: settingsPayload.is_running,
     strategy: settingsPayload.strategy,
