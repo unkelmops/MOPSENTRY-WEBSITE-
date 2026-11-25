@@ -142,6 +142,7 @@ Deno.serve(async (req: Request) => {
     pairs: Array.isArray(settings?.pairs) ? settings.pairs : ["XAUUSD"],
     alerts_enabled: settings?.alerts_enabled ?? true,
     break_even_enabled: settings?.break_even_enabled ?? false,
+    breakeven_enabled: settings?.break_even_enabled ?? false,
     break_even_trigger: settings?.break_even_trigger ?? 10.00,
     // v1.76 expects a buffer value; zero means no additional price offset.
     breakeven_buffer: 0.0,
@@ -165,6 +166,7 @@ Deno.serve(async (req: Request) => {
     pairs: settingsPayload.pairs,
     alerts_enabled: settingsPayload.alerts_enabled,
     break_even_enabled: settingsPayload.break_even_enabled,
+    breakeven_enabled: settingsPayload.breakeven_enabled,
     break_even_trigger: settingsPayload.break_even_trigger,
     breakeven_buffer: settingsPayload.breakeven_buffer,
     breakeven_profit_target: settingsPayload.breakeven_profit_target,
