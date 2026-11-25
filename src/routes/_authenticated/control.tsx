@@ -23,6 +23,14 @@ export const Route = createFileRoute("/_authenticated/control")({
   component: Control,
 });
 
+const pairLabels: Record<string, string> = {
+  XAUUSD: "XAUUSD · Gold",
+  US30: "US30 · Dow Jones",
+  NAS100: "NAS100 / US100 · Nasdaq 100",
+  BTCUSD: "BTCUSD · Bitcoin",
+  GER30: "GER30 · German 30",
+};
+
 const strategies = [
   {
     id: "trend",
