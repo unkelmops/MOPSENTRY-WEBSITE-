@@ -40,8 +40,8 @@ function formatSast(value: string) {
 }
 
 function directionLabel(direction: UsdDirection) {
-  if (direction === "bullish") return "USD may strengthen";
-  if (direction === "bearish") return "USD may weaken";
+  if (direction === "bullish") return "USD likely stronger";
+  if (direction === "bearish") return "USD likely weaker";
   if (direction === "neutral") return "No clear direction";
   return "Not enough data";
 }
@@ -53,10 +53,10 @@ function directionStyle(direction: UsdDirection) {
 }
 
 function goldMeaning(direction: UsdDirection) {
-  if (direction === "bullish") return "Gold may face downward pressure if the market reacts this way.";
-  if (direction === "bearish") return "Gold may get support if the market reacts this way.";
-  if (direction === "neutral") return "This event alone gives no clear direction for Gold.";
-  return "There is not enough information to suggest a Gold direction.";
+  if (direction === "bullish") return "Gold could fall.";
+  if (direction === "bearish") return "Gold could rise.";
+  if (direction === "neutral") return "Gold direction unclear.";
+  return "Gold direction unavailable.";
 }
 
 function SignalSummary({ direction, actualDirection }: {
@@ -80,7 +80,7 @@ function SignalSummary({ direction, actualDirection }: {
         <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Gold bias</p>
         <p className="mt-1 text-sm font-black">{goldSide}</p>
       </div>
-      <p className="col-span-2 text-[10px] text-muted-foreground">News direction only. Confirm with price action.</p>
+      <p className="col-span-2 text-[10px] text-muted-foreground">News bias only · wait for price confirmation.</p>
     </div>
   );
 }
@@ -175,7 +175,7 @@ function FundamentalEvents() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 font-semibold"><Newspaper className="h-4 w-4 text-primary" />Economic events</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Released events remain available for review.</p>
+          <p className="mt-1 text-xs text-muted-foreground">High-impact USD events · quick market view</p>
         </div>
         <button type="button" onClick={() => void calendar.refetch()} disabled={calendar.isFetching} aria-label="Refresh events" className="rounded-lg border p-2 text-muted-foreground disabled:opacity-50">
           <RefreshCw className={`h-4 w-4 ${calendar.isFetching ? "animate-spin" : ""}`} />
@@ -211,7 +211,7 @@ function FundamentalEvents() {
               <div className="rounded-xl border bg-card p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Overall USD outlook</p>
+                    <p className="text-xs text-muted-foreground">USD outlook</p>
                     <p className="mt-1 font-semibold">{directionLabel(outlook.direction)}</p>
                   </div>
                   <span className={`rounded-md px-2 py-1 text-[10px] font-semibold ${directionStyle(outlook.direction)}`}>{outlook.scoredCount} analysed</span>
@@ -220,7 +220,7 @@ function FundamentalEvents() {
               </div>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold">{eventView === "upcoming" ? "Upcoming economic calendar" : "Released news and post-news bias"}</h3>
-                <span className="text-xs text-muted-foreground">Tap a month to expand</span>
+                <span className="text-xs text-muted-foreground">Choose an event group</span>
               </div>
               {monthGroups.length === 0 ? (
                 <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">{eventView === "upcoming" ? "No upcoming high-impact USD events were returned." : "No released events with recorded actual figures are available yet. Past releases will stay here once collected."}</div>
@@ -244,10 +244,10 @@ function FundamentalEvents() {
                                 <span className="font-semibold">{label}</span>
                                 <span className={`rounded-md px-2 py-1 text-[10px] font-semibold ${directionStyle(direction)}`}>{direction === "unavailable" ? "Not enough data" : direction === "neutral" ? "Mixed · no clear bias" : directionLabel(direction)}</span>
                               </div>
-                              <p className="mt-1 text-xs text-muted-foreground">{items.length === 1 ? items[0]?.title : `${items.length} related figures combined`}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{items.length === 1 ? items[0]?.title : `${items.length} figures combined`}</p>
                               <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{next ? formatSast(next.time) : ""}</span>
-                                <span className="inline-flex items-center gap-1 text-primary">View combined signal <ChevronDown className="h-3.5 w-3.5 -rotate-90" /></span>
+                                <span className="inline-flex items-center gap-1 text-primary">View bias <ChevronDown className="h-3.5 w-3.5 -rotate-90" /></span>
                               </div>
                             </button>
                           );
@@ -295,8 +295,8 @@ function FundamentalEvents() {
 
                     {eventView === "released" && (
                       <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Post-news assessment</p>
-                        <p className="mt-1 text-xs text-foreground">Actual result compared with forecast. The USD and XAUUSD bias is shown in the event-group analysis above; it is not a confirmed entry. Wait for price action to confirm the market reaction.</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary">News result</p>
+                        <p className="mt-1 text-xs text-foreground">Actual vs expected. Bias is not an entry signal. the market reaction.</p>
                       </div>
                     )}
                     <div className="mt-3 border-t pt-3">

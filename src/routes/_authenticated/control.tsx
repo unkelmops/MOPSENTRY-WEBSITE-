@@ -181,7 +181,7 @@ function Control() {
               "h-12 min-w-36 rounded-xl px-6 font-bold tracking-wide shadow-lg transition-all",
               s.is_running
                 ? "bg-rose-500 text-white shadow-rose-500/20 hover:bg-rose-600"
-                : "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-cyan-500/20 hover:brightness-110",
+                : "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_26px_-5px_rgba(34,211,238,.55)] hover:brightness-125",
             )}
           >
             <Power className="mr-2 h-4 w-4" /> {s.is_running ? "STOP ROBOT" : "START ROBOT"}
@@ -325,7 +325,7 @@ function Control() {
             </div>
             <div><p className="text-xs font-bold">{settingsDirty ? "Unsaved changes" : "All settings saved"}</p><p className="text-[10px] text-muted-foreground">{settingsDirty ? "Save before starting the robot" : "Ready when your MT5 connection is online"}</p></div>
           </div>
-          <Button onClick={saveAll} disabled={save.isPending || !settingsDirty} className="h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 font-bold text-white shadow-lg shadow-cyan-500/15 hover:brightness-110">
+          <Button onClick={saveAll} disabled={save.isPending || !settingsDirty} className="h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 font-bold text-white shadow-[0_0_25px_-5px_rgba(34,211,238,.45)] hover:brightness-125">
             {save.isPending ? <><Activity className="mr-2 h-4 w-4 animate-pulse" /> Saving…</> : <><Save className="mr-2 h-4 w-4" /> Save settings</>}
           </Button>
         </div>
@@ -375,6 +375,17 @@ function SliderPanel({ title, value, suffix, min, max, step, current, onChange }
 
 function Section({ title, value, children, icon: Icon, accent = "cyan", defaultOpen = false }: {
   title: string; value?: string; children: React.ReactNode; icon: React.ElementType; accent?: "cyan" | "violet" | "blue" | "emerald"; defaultOpen?: boolean;
+}) {
+  const accents = { cyan: "border-cyan-300/20 text-cyan-200", violet: "border-violet-300/20 text-violet-200", blue: "border-blue-300/20 text-blue-200", emerald: "border-emerald-300/20 text-emerald-200" };
+  return (
+    <section className={cn("relative overflow-hidden rounded-2xl border bg-gradient-to-br from-card via-card to-slate-950/55 p-4 shadow-[0_12px_38px_-30px_rgba(56,189,248,.65)] transition-all", accents[accent])}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2"><span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl border bg-white/[0.025]", accents[accent])}><Icon className="h-4 w-4" /></span><span className="truncate text-xs font-bold text-foreground">{title}</span></span>
+        {value && <span className="num max-w-full truncate rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-foreground">{value}</span>}
+      </div>
+      <div>{children}</div>
+    </section>
+  );
 }) {
   const accents = {
     cyan: "border-cyan-300/20 group-open:border-cyan-300/40 text-cyan-200",
