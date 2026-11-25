@@ -17,6 +17,29 @@ function verifySignature(params: URLSearchParams, passphrase: string) {
 function text(body: string, status = 200) {
   return new Response(body, { status, headers: { "Content-Type": "text/plain" } });
 }
+function ipNumber(ip: string): number | null {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return null;
+  return (((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3]) >>> 0;
+}
+function inCidr(ip: string, cidr: string): boolean {
+  const [network, prefixText] = cidr.split("/");
+  const value = ipNumber(ip);
+  const base = ipNumber(network);
+  const prefix = Number(prefixText);
+  if (value === null || base === null || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
+  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  return (value & mask) === (base & mask);
+}
+function isPayfastIp(ip: string): boolean {
+  return [
+    "197.97.145.144/28",
+    "41.74.179.192/27",
+    "102.216.36.0/28",
+    "102.216.36.128/28",
+    "144.126.193.139/32",
+  ].some((range) => inCidr(ip, range));
+}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return text("Method not allowed", 405);
@@ -28,6 +51,8 @@ Deno.serve(async (req) => {
     if (!passphrase || !merchantId) return text("Payment verification is not configured", 503);
     if (!verifySignature(params, passphrase)) return text("Invalid signature", 400);
     if (params.get("merchant_id") !== merchantId) return text("Invalid merchant", 400);
+    const sourceIp = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip");
+    if (sourceIp && !isPayfastIp(sourceIp)) return text("Untrusted notification source", 403);
 
     const sandbox = Deno.env.get("PAYFAST_SANDBOX") === "true";
     const validationUrl = sandbox
@@ -69,7 +94,7 @@ Deno.serve(async (req) => {
       }, { onConflict: "idempotency_key" });
       if (txError) throw txError;
       const { error: updateError } = await admin.from("vps_orders").update({
-        status: "paid", provider_payment_id: paymentId, provider_subscription_token: subscriptionToken,
+        status: order.status === "active" ? "active" : "paid", provider_payment_id: paymentId, provider_subscription_token: subscriptionToken,
         current_period_start: now.toISOString(), current_period_end: periodEnd.toISOString(), updated_at: now.toISOString(),
       }).eq("id", order.id);
       if (updateError) throw updateError;
