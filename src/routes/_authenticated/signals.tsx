@@ -471,6 +471,5 @@ function Signals() {
         <p>News can move differently than expected. These updates do not place trades.</p>
       </div>
     </div>
-    </>
   );
 }
