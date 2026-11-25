@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     if (!verifySignature(params, passphrase)) return text("Invalid signature", 400);
     if (params.get("merchant_id") !== merchantId) return text("Invalid merchant", 400);
     const sourceIp = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip");
-    if (sourceIp && !isPayfastIp(sourceIp)) return text("Untrusted notification source", 403);
+    if (Deno.env.get("PAYFAST_SANDBOX") !== "true" && sourceIp && !isPayfastIp(sourceIp)) return text("Untrusted notification source", 403);
 
     const sandbox = Deno.env.get("PAYFAST_SANDBOX") === "true";
     const validationUrl = sandbox
