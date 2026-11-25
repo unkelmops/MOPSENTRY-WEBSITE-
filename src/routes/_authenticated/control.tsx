@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { igniteApp } from "@/lib/ignite";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -65,9 +65,11 @@ const strategies = [
 
 function Control() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data } = useSuspenseQuery(robotSettingsQuery);
   const { data: hasAppAccess, isLoading: accessLoading } = useQuery(appAccessQuery);
   const { data: account } = useQuery(tradingAccountQuery);
+  const { data: vpsReady, isLoading: vpsLoading, isError: vpsStatusError } = useQuery({ queryKey: ["mopsentry-vps-access"], queryFn: async () => { const { data: order, error: orderError } = await supabase.from("vps_orders").select("id").eq("status", "active").order("created_at", { ascending: false }).limit(1).maybeSingle(); if (orderError) throw orderError; if (!order) return false; const { data: instance, error: instanceError } = await supabase.from("vps_instances").select("id").eq("order_id", order.id).eq("status", "active").maybeSingle(); if (instanceError) throw instanceError; return Boolean(instance); }, refetchInterval: 15000 });
   const [s, setS] = useState<RobotSettings>(data);
   const [savedSettings, setSavedSettings] = useState<RobotSettings>(data);
   const [activePanel, setActivePanel] = useState<"setup" | "risk" | "protection" | "instruments" | "activity">("setup");
@@ -110,15 +112,15 @@ function Control() {
 
   const heartbeatAt = account?.last_heartbeat ? new Date(account.last_heartbeat).getTime() : 0;
   const connectionReady = account?.status === "connected" && Number.isFinite(heartbeatAt) && Date.now() - heartbeatAt >= 0 && Date.now() - heartbeatAt < 30_000;
-  const canStart = hasAppAccess === true && connectionReady;
+  const canStart = hasAppAccess === true && connectionReady && vpsReady === true;
   const selectedStrategy = strategies.find((st) => st.id === s.strategy) ?? strategies[0];
 
   const toggleRun = () => {
     const next = !s.is_running;
-    if (next && settingsDirty) {
-      toast.error("Save your settings first, then press Start.");
-      return;
-    }
+    if (next && vpsReady === false) { toast.message("An active MOPSENTRY VPS subscription is required before starting."); void navigate({ to: "/vps" }); return; }
+    if (next && vpsStatusError) { toast.error("We could not verify your VPS status. Refresh and try again."); return; }
+    if (next && !connectionReady) { toast.error("Connect MT5 and wait for a fresh EA check-in before starting."); return; }
+    if (next && settingsDirty) { toast.error("Save your settings first, then press Start."); return; }
     setS({ ...s, is_running: next });
     if (next) igniteApp();
     save.mutate({ is_running: next }, { onSuccess: () => toast.success(next ? "Robot started" : "Robot stopped") });
@@ -198,8 +200,8 @@ function Control() {
           </div>
           <Button
             onClick={toggleRun}
-            disabled={save.isPending || (!s.is_running && (settingsDirty || accessLoading || !canStart))}
-            title={s.is_running ? "Stop MOPSENTRY" : hasAppAccess !== true ? "App Access is required to start." : !connectionReady ? "A fresh MT5/EA connection is required to start." : "Start MOPSENTRY"}
+            disabled={save.isPending || (!s.is_running && (settingsDirty || accessLoading || hasAppAccess !== true || vpsLoading || vpsStatusError || (vpsReady === true && !connectionReady)))}
+            title={s.is_running ? "Stop MOPSENTRY" : vpsReady === false ? "Choose a MOPSENTRY VPS subscription first." : hasAppAccess !== true ? "App Access is required to start." : !connectionReady ? "A fresh MT5/EA connection is required to start." : "Start MOPSENTRY"}
             className={cn(
               "h-12 min-w-36 rounded-xl px-6 font-bold tracking-wide shadow-lg transition-all",
               s.is_running
@@ -213,6 +215,8 @@ function Control() {
         <p className="mt-3 border-t border-white/[0.07] pt-3 text-[11px] leading-relaxed text-muted-foreground">
           {settingsDirty ? "Save your settings first, then start the robot." : "The EA receives saved settings at its next check-in."}
         </p>
+        {!s.is_running && !vpsLoading && vpsReady === false && <Notice title="MOPSENTRY VPS required">Your robot needs an active MOPSENTRY VPS subscription before it can be started from this workspace. Choose a VPS package to continue.</Notice>}
+        {!s.is_running && vpsStatusError && <Notice title="VPS status unavailable">We could not verify your VPS subscription. Refresh this page before trying to start.</Notice>}
         {!s.is_running && hasAppAccess !== true && !accessLoading && (
           <Notice title="App Access required">Your account does not currently have App Access enabled. Contact the MOPSENTRY administrator to have access granted.</Notice>
         )}
