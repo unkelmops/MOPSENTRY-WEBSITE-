@@ -387,23 +387,3 @@ function Section({ title, value, children, icon: Icon, accent = "cyan", defaultO
     </section>
   );
 }
-    violet: "border-violet-300/20 group-open:border-violet-300/40 text-violet-200",
-    blue: "border-blue-300/20 group-open:border-blue-300/40 text-blue-200",
-    emerald: "border-emerald-300/20 group-open:border-emerald-300/40 text-emerald-200",
-  };
-  return (
-    <details open={defaultOpen} className={cn("group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-card via-card to-slate-950/55 shadow-[0_12px_38px_-30px_rgba(56,189,248,.65)] transition-all", accents[accent])}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 items-center gap-3">
-          <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl border bg-white/[0.025]", accents[accent])}><Icon className="h-4 w-4" /></span>
-          <span className="min-w-0"><span className="block truncate text-xs font-bold text-foreground">{title}</span><span className="mt-0.5 block text-[9px] font-medium uppercase tracking-[.14em] text-muted-foreground">Configuration module</span></span>
-        </span>
-        <span className="flex shrink-0 items-center gap-2">
-          {value && <span className="num max-w-[145px] truncate rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-foreground">{value}</span>}
-          <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
-        </span>
-      </summary>
-      <div className="border-t border-white/[0.07] bg-gradient-to-br from-white/[0.025] to-transparent px-4 pb-4 pt-3">{children}</div>
-    </details>
-  );
-}
