@@ -309,7 +309,7 @@ function Control() {
           <SliderPanel title="Maximum trades" value={String(s.max_trades)} suffix="TRADE CAP" min={1} max={20} step={1} current={s.max_trades} onChange={(v) => setS({ ...s, max_trades: v })} />
         </div>
         <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">Maximum trades is the EA's total trade cap, not extra entries per setup. The EA must count its own open positions and pending orders for the symbol before placing a new order.</p>
-      </Section>
+      </Section>}
 
       {activePanel === "protection" && <Section title="Break-even protection" value={s.break_even_enabled ? `ON · ${Number(s.break_even_trigger).toFixed(2)}` : "OFF"} icon={ShieldCheck} accent="emerald">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/[0.045] p-3">
@@ -328,7 +328,8 @@ function Control() {
             <Slider min={1} max={1000} step={1} value={[Number(s.break_even_trigger)]} onValueChange={([v]) => setS({ ...s, break_even_trigger: v ?? 1 })} />
           </div>
         )}
-      </Section>
+      </Section>}
+      }
 
       {activePanel === "instruments" && <div className="grid items-stretch gap-3 lg:grid-cols-[1.25fr_.75fr]">
         <Section title="Trading instruments" value={`${s.pairs.length} selected`} icon={Target} accent="cyan">
@@ -348,7 +349,7 @@ function Control() {
             <Switch checked={s.alerts_enabled} onCheckedChange={(v) => setS({ ...s, alerts_enabled: v })} />
           </div>
         </Section>
-      </div>
+      </div>}
 
       {activePanel === "activity" && <Section title="Activity log" value={`${activityRows.length} recent events`} icon={Activity} accent="cyan">
         <div className="space-y-2">
