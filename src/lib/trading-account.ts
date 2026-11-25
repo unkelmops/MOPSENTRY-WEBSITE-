@@ -6,14 +6,17 @@ export type TradingAccount = Database["public"]["Tables"]["trading_accounts"]["R
 
 export const tradingAccountQuery = queryOptions({
   queryKey: ["trading-account"],
-  // Poll gently: each open screen previously hit the database every 2s.
-  staleTime: 5_000,
-  refetchInterval: 10_000,
+  // Realtime handles immediate updates; this 3s interval is a quick fallback.
+  staleTime: 1_000,
+  refetchInterval: 3_000,
   refetchIntervalInBackground: false,
   refetchOnWindowFocus: true,
   queryFn: async (): Promise<TradingAccount> => {
-    const { data: u } = await supabase.auth.getUser();
-    const userId = u.user!.id;
+    // The cached session avoids an extra auth round-trip on every refresh.
+    // Supabase RLS still enforces access to the signed-in user's row.
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (sessionError || !userId) throw new Error("Please sign in again.");
     const { data, error } = await supabase
       .from("trading_accounts")
       .select("*")
