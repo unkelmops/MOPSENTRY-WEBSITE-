@@ -84,7 +84,7 @@ function VpsPage() {
         <header className="flex items-center justify-between gap-4">
           <Link to="/" aria-label="MOPSENTRY home"><img src={logo} alt="MOPSENTRY" width={1328} height={316} className="h-9 w-auto sm:h-11" /></Link>
           <Button asChild size="sm" variant="outline" className="rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
-            <Link to="/"><ArrowLeft className="mr-2 h-4 w-4" /> Back to home</Link>
+            <Link to={signedIn ? "/dashboard" : "/"}><ArrowLeft className="mr-2 h-4 w-4" /> {signedIn ? "Back to MOPSENTRY" : "Back to home"}</Link>
           </Button>
         </header>
 
