@@ -36,9 +36,18 @@ Deno.serve(async (req) => {
     if (userError || !userData.user) return json({ error: "Your session has expired. Sign in again." }, 401);
 
     const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-    const { data: current, error: currentError } = await admin.from("vps_orders").select("id,status").eq("user_id", userData.user.id).in("status", ["pending_payment","paid","provisioning","active","past_due","suspended"]).limit(1).maybeSingle();
+    const { data: current, error: currentError } = await admin.from("vps_orders").select("id,status,created_at").eq("user_id", userData.user.id).in("status", ["pending_payment","paid","provisioning","active","past_due","suspended"]).limit(1).maybeSingle();
     if (currentError) throw currentError;
-    if (current) return json({ error: "You already have a VPS subscription or an unfinished order. Contact MOPSENTRY support to continue." }, 409);
+    if (current) {
+      const stalePending = current.status === "pending_payment" &&
+        Date.now() - new Date(current.created_at).getTime() > 30 * 60 * 1000;
+      if (stalePending) {
+        const { error: expireError } = await admin.from("vps_orders").update({ status: "failed", updated_at: new Date().toISOString() }).eq("id", current.id);
+        if (expireError) throw expireError;
+      } else {
+        return json({ error: "You already have a VPS subscription or an unfinished order. Contact MOPSENTRY support to continue." }, 409);
+      }
+    }
 
     if (Deno.env.get("VPS_CHECKOUT_ENABLED") !== "true") {
       return json({ error: "VPS checkout is not open yet. MOPSENTRY is completing reseller and payment setup." }, 503);
