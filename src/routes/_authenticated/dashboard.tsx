@@ -292,21 +292,7 @@ function Dashboard() {
 
       <Button variant="outline" className="w-full justify-between rounded-xl border-cyan-400/25 bg-gradient-to-r from-cyan-500/10 to-blue-500/5 py-5" onClick={() => setBreakEvenDialogOpen(true)}><span className="flex items-center gap-2"><span className="text-cyan-300">⌁</span>Break-Even Protection</span><span className={cn("rounded-full px-3 py-1 text-[10px] font-bold",s.break_even_enabled?"bg-emerald-400/15 text-emerald-300":"bg-slate-500/15 text-slate-300")}>{s.break_even_enabled?"ON":"OFF"} · Configure</span></Button>
 
-      <Link
-        to="/market-report"
-        className="group relative flex items-center justify-between gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card/90 to-card p-4 shadow-glow transition-colors hover:border-primary/60"
-      >
-        <span className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-primary/10 blur-2xl" />
-        <span className="flex min-w-0 items-start gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-primary/30 bg-primary/10 text-primary"><BrainCircuit className="h-5 w-5" /></span>
-          <span className="min-w-0">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">MOPSENTRY INTELLIGENCE</span>
-            <span className="mt-1 block font-semibold text-foreground">Market Report</span>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Explore shared market charts and analysis for Gold, US30 and NAS100.</span>
-          </span>
-        </span>
-        <ArrowUpRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-      </Link>
+
 
 
       {fresh && !compatibleEA && (
