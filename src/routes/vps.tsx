@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Clock3, CreditCard,
-  Headset, MonitorDown, Server, ShieldCheck, Zap,
+  Headset, MonitorDown, Server, ShieldCheck, Zap, Phone, Mail, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,37 +43,6 @@ function VpsPage() {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) setSignedIn(!!session); });
     return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
-  const startCheckout = async () => {
-    setCheckoutLoading(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        toast.message("Sign in to continue to VPS checkout.");
-        await navigate({ to: "/auth" });
-        return;
-      }
-      const { data, error } = await supabase.functions.invoke("mopsentry-vps-checkout");
-      if (error || !data?.action || !data?.fields) {
-        throw new Error(data?.error || error?.message || "Could not start checkout.");
-      }
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = data.action;
-      Object.entries(data.fields as Record<string, string>).forEach(([name, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-      });
-      document.body.appendChild(form);
-      form.submit();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to start checkout.");
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#070b14] text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -140,7 +109,7 @@ function VpsPage() {
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">MOPSENTRY VPS packages</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Choose the power behind your MT5 setup.</h2>
             <p className="mt-3 text-sm leading-6 text-slate-400">Five Windows VPS options, presented and managed under the MOPSENTRY brand. Choose a subscription term that suits your budget.</p>
-            <p className="mt-3 text-[11px] leading-5 text-amber-200/80">Choose your subscription period below. Displayed totals are indicative; checkout will open only after MOPSENTRY confirms final service pricing and fulfilment.</p>
+            <p className="mt-3 text-[11px] leading-5 text-amber-200/80">Choose your subscription period and send an order request. Payment is not collected yet; we will contact you to confirm availability and next steps.</p>
           </div>
           <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Subscription duration">{([{months:3,label:"3 months"},{months:6,label:"6 months"},{months:12,label:"1 year"}] as const).map((term) => <button key={term.months} type="button" aria-pressed={billingMonths === term.months} onClick={() => setBillingMonths(term.months)} className={cn("rounded-lg px-4 py-2 text-xs font-bold",billingMonths === term.months ? "bg-blue-500 text-white" : "bg-white/5 text-slate-300")}>{term.label}</button>)}</div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
