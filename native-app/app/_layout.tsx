@@ -62,6 +62,7 @@ function AppTabs() {
         <Tabs.Screen name="settings" options={{ title: "Account" }} />
         <Tabs.Screen name="broker-connections" options={{ href: null }} />
         <Tabs.Screen name="direct-accounts" options={{ href: null }} />
+        <Tabs.Screen name="vps" options={{ href: null }} />
       </Tabs>
     </>
   );
