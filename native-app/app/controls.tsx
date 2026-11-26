@@ -6,6 +6,7 @@ import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
 import { BrandHeader } from "../src/components/BrandHeader";
 import { AmbientBackground } from "../src/components/AmbientBackground";
+import { recordActivity } from "../src/lib/activity-log";
 
 const PAIRS = ["XAUUSD","US30","NAS100","BTCUSD","GER30","EURUSD","GBPUSD","USDJPY","GBPJPY","AUDUSD","USDCAD"];
 const TIMEFRAMES = ["M1","M5","M15","M30","H1","H4","D1"];
@@ -62,6 +63,7 @@ export default function ControlsScreen() {
   try{const {data:auth,error:ae}=await supabase.auth.getUser();if(ae||!auth.user)throw new Error("Please sign in again.");
    const patch={strategy:s.strategy,timeframe:s.timeframe,higher_timeframe:s.higher_timeframe,scalper_frequency:s.scalper_frequency,lot_size:Number(s.lot_size),risk_percent:Number(s.risk_percent),max_trades:Number(s.max_trades),pairs:s.pairs,alerts_enabled:s.alerts_enabled,break_even_enabled:s.break_even_enabled,break_even_trigger:Number(s.break_even_trigger),updated_at:new Date().toISOString()};
    const {error:e}=await (supabase as any).from("robot_settings").update(patch).eq("user_id",auth.user.id);if(e)throw e;
+   await recordActivity("settings_saved","saved","Robot settings saved",patch);
    const next={...s};setSaved(next);Alert.alert("Settings saved","MOPSENTRY EA will receive the saved settings on its next check-in.");
   }catch(e){setError(e instanceof Error?e.message:"Could not save settings.");}finally{setSaving(false);void refresh();}
  }
@@ -75,6 +77,7 @@ export default function ControlsScreen() {
   try{const {data:auth,error:ae}=await supabase.auth.getUser();if(ae||!auth.user)throw new Error("Please sign in again.");
    const {error:e}=await (supabase as any).from("robot_settings").update({is_running:next,updated_at:new Date().toISOString()}).eq("user_id",auth.user.id);if(e)throw e;
    setS(p=>({...p,is_running:next}));setSaved(p=>({...p,is_running:next}));
+   await recordActivity(next?"robot_started":"robot_stopped","saved",next?"Robot start setting saved":"Robot stop setting saved",{is_running:next});
   }catch(e){setError(e instanceof Error?e.message:"Could not change robot state.");}finally{setBusy(false);void refresh();}
  }
  function closeAllConfirm(){
@@ -84,7 +87,7 @@ export default function ControlsScreen() {
  async function sendCloseAll(){
   setBusy(true);setError("");try{const {data:auth,error:ae}=await supabase.auth.getUser();if(ae||!auth.user)throw new Error("Please sign in again.");
    const db=supabase as any;const {data:latest,error:le}=await db.from("robot_commands").select("id").eq("user_id",auth.user.id).eq("command","CLOSE_ALL").in("status",["pending","delivered"]).limit(1).maybeSingle();if(le)throw le;if(latest)throw new Error("A Close All request is already awaiting acknowledgement.");
-   const {data,error:e}=await db.from("robot_commands").insert({user_id:auth.user.id,command:"CLOSE_ALL",status:"pending"}).select("id,command,status,created_at,confirmed_at").single();if(e)throw e;setCommand(data);
+   const {data,error:e}=await db.from("robot_commands").insert({user_id:auth.user.id,command:"CLOSE_ALL",status:"pending"}).select("id,command,status,created_at,confirmed_at").single();if(e)throw e;setCommand(data);await recordActivity("close_all","queued","Close All command queued",{command_id:data.id});
   }catch(e){setError(e instanceof Error?e.message:"Could not queue Close All.");}finally{setBusy(false);void refresh();}
  }
  const set=(patch:Partial<Settings>)=>setS(p=>({...p,...patch}));
