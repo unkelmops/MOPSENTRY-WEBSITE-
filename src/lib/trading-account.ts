@@ -6,9 +6,9 @@ export type TradingAccount = Database["public"]["Tables"]["trading_accounts"]["R
 
 export const tradingAccountQuery = queryOptions({
   queryKey: ["trading-account"],
-  // Realtime handles immediate updates; this 3s interval is a quick fallback.
-  staleTime: 1_000,
-  refetchInterval: 3_000,
+  // Full account snapshot: positions, pending orders and account metadata refresh every 5 seconds.
+  staleTime: 3_000,
+  refetchInterval: 5_000,
   refetchIntervalInBackground: false,
   refetchOnWindowFocus: true,
   queryFn: async (): Promise<TradingAccount> => {
@@ -63,3 +63,23 @@ export async function regenerateConnectionKey() {
   if (typeof data !== "string" || !data) throw new Error("The new connection key was not returned.");
   return data;
 }
+
+export const tradingAccountBalanceQuery = queryOptions({
+  queryKey: ["trading-account-balance"],
+  staleTime: 1_000,
+  refetchInterval: 2_000,
+  refetchIntervalInBackground: false,
+  refetchOnWindowFocus: true,
+  queryFn: async () => {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (sessionError || !userId) throw new Error("Please sign in again.");
+    const { data, error } = await supabase
+      .from("trading_accounts")
+      .select("status,balance,equity,account_currency,last_heartbeat,ea_version")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+});
