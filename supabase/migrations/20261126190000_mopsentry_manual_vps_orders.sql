@@ -44,3 +44,26 @@ grant select on public.vps_order_events to authenticated;
 grant all on public.vps_order_events to service_role;
 grant select on public.vps_orders to authenticated;
 comment on table public.vps_order_events is 'Immutable customer-visible VPS order status history; writes are server-side only.';
+
+create or replace function public.touch_vps_order_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at := now(); return new; end;
+$$;
+drop trigger if exists vps_orders_touch_updated_at on public.vps_orders;
+create trigger vps_orders_touch_updated_at before update on public.vps_orders
+for each row execute function public.touch_vps_order_updated_at();
+
+create or replace function public.record_vps_order_status_change()
+returns trigger language plpgsql as $$
+begin
+  if new.status is distinct from old.status then
+    insert into public.vps_order_events(order_id,user_id,event_type,from_status,to_status,message,actor_user_id)
+    values (new.id,new.user_id,'status_changed',old.status,new.status,
+      'Your VPS order status was updated to ' || replace(new.status,'_',' ') || '.',auth.uid());
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists vps_orders_record_status_change on public.vps_orders;
+create trigger vps_orders_record_status_change after update of status on public.vps_orders
+for each row execute function public.record_vps_order_status_change();
