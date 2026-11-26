@@ -36,9 +36,11 @@ create table if not exists public.vps_order_events (
  created_at timestamptz not null default now()
 );
 create index if not exists vps_order_events_order_created_idx on public.vps_order_events(order_id,created_at desc);
+create index if not exists vps_order_events_user_created_idx on public.vps_order_events(user_id,created_at desc);
+create index if not exists vps_order_events_actor_user_idx on public.vps_order_events(actor_user_id) where actor_user_id is not null;
 alter table public.vps_order_events enable row level security;
 drop policy if exists "VPS order events own read" on public.vps_order_events;
-create policy "VPS order events own read" on public.vps_order_events for select to authenticated using (auth.uid()=user_id);
+create policy "VPS order events own read" on public.vps_order_events for select to authenticated using ((select auth.uid())=user_id);
 revoke all on public.vps_order_events from anon,authenticated;
 grant select on public.vps_order_events to authenticated;
 grant all on public.vps_order_events to service_role;
