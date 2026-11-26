@@ -1,92 +1,77 @@
-# MOPSENTRY Native App
+# MOPSENTRY Native iPhone App
 
-This is the separate React Native / Expo application. It is a real native app project, not a website displayed inside a WebView.
+This is the standalone React Native / Expo application. It is a real native app, not the website displayed inside a WebView. The native project is in `native-app/` and its source of truth is this repository: `unkelmops/mopsentry-bot`.
 
-## Current native screens
+## Native screens
 
-- **Overview** — account heartbeat and EA-reported account metrics, Gold Market Pulse, and Trade Setup preview.
-- **Market** — XAUUSD, US30 and NAS100 shared market data, M5/M15/H1/H4 chart timeframes, data-health indicators, and expandable analysis sections.
-- **Events** — high-impact USD calendar, upcoming and released events, South African time display, historical release archive and fundamental outlook.
-- **Signals** — USD news outlook, open trades and pending orders.
-- **Robot** — robot status and guarded controls. Start requires server-side App Access and a fresh EA heartbeat; Close All requires a fresh heartbeat and confirmation.
-- **Account** — signed-in email, App Access status, demo account details, connection status, connection-key reveal/copy/rotate and sign out.
-- **Broker Connections / Direct Accounts** — secondary screens for connection-method information and pending read-only direct-account metadata. The Windows MT5 bridge is not deployed; saving metadata does not connect an account.
+- **Overview** — account heartbeat, EA-reported balance/equity, positions and pending orders, break-even shortcut, currency display and account status.
+- **Market Report** — shared XAUUSD, US30 and NAS100 market data, M5/M15/H1/H4 chart selection, quotes, candle chart, trend/structure, recent range and liquidity-sweep analysis. It uses the same Supabase market feed as the website; data availability depends on the shared provider/feed health.
+- **Events** — high-impact USD calendar, upcoming and released events, SAST display, historical archive and fundamental outlook.
+- **Signals** — USD news outlook, open trades and pending orders reported by the connected EA.
+- **Robot Controls** — Trend / Scalper / Grid strategy, entry timeframe, higher timeframe, scalper frequency, lot size, risk, maximum trades, selected pairs, alerts, break-even protection, activity log, Start/Stop and Close All.
+- **Account** — signed-in email, App Access, demo account details, connection status, connection-key reveal/copy/rotation, display currency and sign out.
+- **VPS Packages** — Starter, Pro, Turbo, Boost and Super; 3-, 6- and 12-month terms; subscription and instance status. Checkout remains disabled until supplier and PayFast arrangements are verified.
+- **Broker Connections / Direct Accounts** — connection-method information and pending read-only direct-account metadata. The separate Windows MT5 read-only bridge is not deployed; saving metadata does not connect an account.
 
-All screens use the shared MOPSENTRY dark-blue theme, logo header and animated ambient particle background. The app reads live backend data and displays empty/unavailable states rather than fabricating quotes, trades, candles or setups.
+The UI uses the MOPSENTRY dark-blue theme, brand header and animated ambient background. Screens show empty/unavailable states rather than inventing quotes, trades, candles or setups.
 
 ## Backend and security
 
-The app uses the configured MOPSENTRY Supabase project and Supabase Auth. Sessions are persisted with Expo SecureStore. Public client credentials belong in `.env`; never put a service-role key, broker password, bridge secret or other privileged credential in the app or GitHub.
+The app connects directly to the existing MOPSENTRY Supabase project and uses Supabase Auth. Sessions are persisted with Expo SecureStore. The public client URL/key are configured through `.env`. Never put a Supabase service-role key, broker password, EA secret or other privileged credential in the app or GitHub.
 
-The committed `.env.example` contains the current project's public Supabase URL and publishable client key. Copy it to `.env` for local development. The local `.env` file is ignored by Git.
+Use an approved **demo login** for testing. Do not enter live broker passwords or API secrets. App Access and robot command safeguards remain enforced by the backend. This project does not require an App Store listing.
 
-Use an approved **demo login** for testing. Do not enter live broker passwords or API secrets. App Access remains controlled by the backend. Do not enable access or connect a live trading account as part of this test.
+## Run on iPhone with Expo Go
 
-## Run on your phone with Expo Go
-
-You do not need to move individual source files to your PC. GitHub is the source of truth; clone or pull the repository.
-
-### First setup on Windows
-
-1. Install Node.js LTS and Git if they are not already installed.
-2. Open PowerShell.
-3. Run:
+From PowerShell on Windows:
 
 ```powershell
-git clone https://github.com/unkelmops/MOPSENTRY-WEBSITE-.git
-cd MOPSENTRY-WEBSITE-\native-app
+cd "$env:USERPROFILE\Documents\GitHub\mopsentry-bot\native-app"
 Copy-Item .env.example .env
 npm install
 npx expo start
 ```
 
-4. Open Expo Go on your iPhone or Android phone and scan the QR code shown in PowerShell.
-5. Sign in with the approved demo login.
-
-If the phone cannot reach the development server over the local network, stop Expo with Ctrl+C and run:
+Open Expo Go on the iPhone and scan the QR code. If local network discovery fails:
 
 ```powershell
 npx expo start --tunnel
 ```
 
-### Updating after new changes
+## Install as a standalone iPhone app (no App Store)
 
-From PowerShell:
+The GitHub Actions workflow **Build MOPSENTRY iPhone IPA (unsigned)** generates an unsigned iPhone IPA artifact. An unsigned IPA cannot be installed by tapping it. Use AltStore, SideStore or another trusted sideloading tool to sign it with your own Apple ID and install it on your own device. Free Apple ID signing normally expires after seven days and must be refreshed. Keep Apple ID credentials private and enter them only into the sideloading tool.
+
+Workflow and artifact: https://github.com/unkelmops/mopsentry-bot/actions
+
+## Update local source
 
 ```powershell
-cd MOPSENTRY-WEBSITE-
+cd "$env:USERPROFILE\Documents\GitHub\mopsentry-bot"
 git pull origin main
 cd native-app
 npm install
 npx expo start
 ```
 
-Do not copy individual files from GitHub. Pulling the repository keeps source, logo, configuration and dependencies together.
+GitHub is the source of truth. Pull the repository rather than copying individual files. The native app files are also mirrored into the website repository's `native-app/` folder to keep the two projects aligned.
 
-### If npm runs out of memory
-
-```powershell
-$env:NODE_OPTIONS="--max-old-space-size=4096"
-npm install
-```
-
-## Validation already automated in GitHub
+## Automated validation
 
 The Native app checks workflow runs:
 
-- `npx expo install --check`
-- `npx expo-doctor`
-- `npm run typecheck`
-- `npx expo export --platform android`
-- `npx expo export --platform ios`
+- npm dependency installation
+- TypeScript typecheck
+- Expo Android bundle export
 
-These checks validate dependencies, TypeScript and native JavaScript bundles. An Expo export is **not** a signed APK/IPA and does not replace testing on a real phone.
+The iOS workflow separately runs Expo prebuild and Xcode to produce the unsigned IPA. A successful typecheck/export does not replace a real-device test.
 
-## What still requires device testing
+## Still requires real-device / service verification
 
-- Sign in, sign up and password-reset email flow using the approved demo login.
-- Screen layout, scrolling, bottom tabs and animated background on the actual iPhone/Android device.
-- Market, event, EA heartbeat and account data against the configured backend.
-- Expo Go compatibility and any device-specific issues.
+- Sign in, account creation and password-reset flow on the actual iPhone.
+- Screen sizing, navigation, scrolling, and animation on the actual iPhone.
+- Live shared market-feed freshness and event calendar updates.
+- EA check-in, robot setting updates and Close All acknowledgement using a connected **demo** EA.
+- Sideload signing and refresh on the user's own iPhone.
 
-The direct MT5 monitoring bridge is a separate not-yet-deployed service. Until that bridge exists and is independently security-reviewed, Direct Accounts remains a pending metadata workflow, not a working broker connection.
+The direct MT5 read-only monitoring bridge is a separate not-yet-deployed service. Until that bridge exists and is independently security-reviewed, Direct Accounts is a pending metadata workflow, not a working broker connection. VPS checkout is intentionally disabled.
