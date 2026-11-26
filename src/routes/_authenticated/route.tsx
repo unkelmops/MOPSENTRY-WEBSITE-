@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Bot, Radio, Link2, LogOut, MoreVertical, UserRound, BrainCircuit, Server } from "lucide-react";
+import { LayoutDashboard, Bot, Radio, Link2, LogOut, MoreVertical, UserRound, Server } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ThemePicker } from "@/components/theme-picker";
 import { useEffect, useState } from "react";
@@ -21,7 +21,6 @@ const tabs = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/control", label: "Robot", icon: Bot },
   { to: "/signals", label: "Signals", icon: Radio },
-  { to: "/market-report", label: "Market Report", icon: BrainCircuit },
 ] as const;
 
 function AppLayout() {
