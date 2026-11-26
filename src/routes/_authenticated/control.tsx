@@ -215,6 +215,7 @@ function Control() {
         <p className="mt-3 border-t border-white/[0.07] pt-3 text-[11px] leading-relaxed text-muted-foreground">
           {settingsDirty ? "Save your settings first, then start the robot." : "The EA receives saved settings at its next check-in."}
         </p>
+        {!s.is_running && isOwner && <Notice title="MOPSENTRY VPS access active">This account has an approved MOPSENTRY VPS entitlement. No package purchase is required for this account.</Notice>}
         {!s.is_running && !isOwner && !vpsLoading && vpsReady === false && <Notice title="MOPSENTRY VPS required">Your robot needs an active MOPSENTRY VPS subscription before it can be started from this workspace. Choose a VPS package to continue.</Notice>}
         {!s.is_running && vpsStatusError && <Notice title="VPS status unavailable">We could not verify your VPS subscription. Refresh this page before trying to start.</Notice>}
         {!s.is_running && hasAppAccess !== true && !accessLoading && (
