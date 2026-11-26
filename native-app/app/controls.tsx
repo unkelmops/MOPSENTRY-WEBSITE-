@@ -34,7 +34,7 @@ export default function ControlsScreen() {
  const refresh=useCallback(async()=>{
   const {data:auth,error:authError}=await supabase.auth.getUser();
   if(authError||!auth.user){router.replace("/");return;}
-  const appMeta=auth.user.app_metadata??{};\n  const isOwner=appMeta.role==="owner"||appMeta.is_owner===true||(Array.isArray(appMeta.roles)&&appMeta.roles.includes("owner"));\n  setOwner(isOwner);\n  const db=supabase as any;
+  const appMeta=auth.user.app_metadata??{};\n  const isOwner=appMeta.role==="owner"||appMeta.is_owner===true||appMeta.vps_entitled===true||(Array.isArray(appMeta.roles)&&appMeta.roles.includes("owner"));\n  setOwner(isOwner);\n  const db=supabase as any;
   const [ar,tr,sr,cr,vr,lr]=await Promise.all([
    db.from("app_access_entitlements").select("enabled").eq("user_id",auth.user.id).maybeSingle(),
    db.from("trading_accounts").select("status,last_heartbeat").eq("user_id",auth.user.id).maybeSingle(),
@@ -97,7 +97,7 @@ export default function ControlsScreen() {
  return <SafeAreaView style={styles.safe}><AmbientBackground/><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
   <BrandHeader/><Text style={styles.eyebrow}>MOPSENTRY / CONTROL DECK</Text><Text style={styles.title}>Robot controls</Text>
   <View style={styles.hero}><View style={styles.heroRow}><View><Text style={styles.label}>EXECUTION STATUS</Text><Text style={styles.heroTitle}>{s.is_running?"Robot running":"Robot stopped"}</Text><Text style={styles.body}>{connected?"MT5 heartbeat fresh":"MT5 connection offline"}</Text></View><View style={[styles.pill,connected?styles.pillOn:styles.pillOff]}><Text style={styles.pillText}>{connected?"CONNECTED":"OFFLINE"}</Text></View></View>
-   <Pressable disabled={busy||(!s.is_running&&(!access||!connected||(!owner&&!vpsReady)||dirty))} onPress={()=>void toggleRobot()} style={[styles.startButton,s.is_running&&styles.stopButton,(!s.is_running&&(!access||!connected||!vpsReady||dirty))&&styles.disabled]}>{busy?<ActivityIndicator color="#fff"/>:<Text style={styles.startText}>{s.is_running?"STOP MOPSENTRY":"START MOPSENTRY"}</Text>}</Pressable>
+   <Pressable disabled={busy||(!s.is_running&&(!access||!connected||(!owner&&!vpsReady)||dirty))} onPress={()=>void toggleRobot()} style={[styles.startButton,s.is_running&&styles.stopButton,(!s.is_running&&(!access||!connected||(!owner&&!vpsReady)||dirty))&&styles.disabled]}>{busy?<ActivityIndicator color="#fff"/>:<Text style={styles.startText}>{s.is_running?"STOP MOPSENTRY":"START MOPSENTRY"}</Text>}</Pressable>
    {!access?<Text style={styles.warning}>App Access is not enabled.</Text>:null}{!owner&&!vpsReady?<Pressable onPress={()=>router.push("/vps")}><Text style={styles.warning}>Active MOPSENTRY VPS required · VIEW PACKAGES ›</Text></Pressable>:null}{!connected?<Text style={styles.warning}>Connect MT5 and wait for a fresh EA heartbeat.</Text>:null}{dirty?<Text style={styles.warning}>Save your settings before starting.</Text>:null}
   </View>
   <View style={styles.panelTabs}>{PANELS.map(p=>chip(p,panel===p,()=>setPanel(p)))}</View>
