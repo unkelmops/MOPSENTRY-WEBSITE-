@@ -28,7 +28,7 @@ const benefits = [
 const steps = [
   { number: "01", title: "Choose your VPS", text: "Choose a 3, 6 or 12-month subscription term." },
   { number: "02", title: "Choose your package", text: "Select the Windows VPS tier that fits your MT5 setup while signed in to MOPSENTRY." },
-  { number: "03", title: "Payment and provisioning", text: "After payment is verified, MOPSENTRY arranges your VPS and sends setup instructions securely." },
+  { number: "03", title: "Payment and provisioning", text: "MOPSENTRY reviews supplier availability, confirms final pricing and contacts you to arrange payment and setup manually." },
 ];
 
 function VpsPage() {
@@ -73,7 +73,8 @@ function VpsPage() {
     let mounted = true;
     void supabase.auth.getSession().then(({ data }) => { if (mounted) setSignedIn(!!data.session); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) setSignedIn(!!session); });
-    void loadLatestOrder();\n    return () => { mounted = false; listener.subscription.unsubscribe(); };
+    void loadLatestOrder();
+    return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#070b14] text-white">
