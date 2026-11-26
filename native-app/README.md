@@ -17,7 +17,7 @@ The UI uses the MOPSENTRY dark-blue theme, brand header and animated ambient bac
 
 ## Backend and security
 
-The app connects directly to the existing MOPSENTRY Supabase project and uses Supabase Auth. Sessions are persisted with Expo SecureStore. The public client URL/key are configured through `.env`. Never put a Supabase service-role key, broker password, EA secret or other privileged credential in the app or GitHub.
+The app connects directly to the existing MOPSENTRY Supabase project and uses Supabase Auth. Sessions are persisted with Expo SecureStore. Sign-up confirmation and password recovery return to native routes through the `mopsentry://auth/callback` deep link. Before those email flows can work, add both `mopsentry://auth/callback` and `mopsentry://auth/callback?flow=recovery` under Supabase Dashboard → Authentication → URL Configuration → Redirect URLs. The public client URL/key are configured through `.env`. Never put a Supabase service-role key, broker password, EA secret or other privileged credential in the app or GitHub.
 
 Use an approved **demo login** for testing. Do not enter live broker passwords or API secrets. App Access and robot command safeguards remain enforced by the backend. This project does not require an App Store listing.
 
