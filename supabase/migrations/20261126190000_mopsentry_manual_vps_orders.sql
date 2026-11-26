@@ -19,6 +19,7 @@ alter table public.vps_orders add constraint vps_orders_monthly_amount_minor_che
 alter table public.vps_orders add constraint vps_orders_email_status_check check (email_status in ('not_configured','sent','failed'));
 update public.vps_orders set order_reference='MOPS-'||upper(substr(replace(id::text,'-',''),1,10)) where order_reference is null;
 alter table public.vps_orders alter column order_reference set not null;
+alter table public.vps_orders alter column order_reference set default ('MOPS-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,10)));
 create unique index if not exists vps_orders_order_reference_uidx on public.vps_orders(order_reference);
 drop index if exists public.vps_orders_one_current_per_user_idx;
 create unique index vps_orders_one_current_per_user_idx on public.vps_orders(user_id)
