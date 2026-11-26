@@ -167,9 +167,11 @@ function VpsPage() {
                 <ul className="mt-4 space-y-2 text-xs text-slate-300">
                   {["Genuine Windows Server licence", "RDP and Administrator access", "NVMe storage and 1 Gbps uplink", "DDoS protection and 24/7 support", "MOPSENTRY setup coordination"].map((item) => <li key={item} className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" />{item}</li>)}
                 </ul>
-                <Button type="button" variant="outline" onClick={() => { setSelectedPackage(plan); setOrderError(""); setOrderReference(""); }} className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
+                {signedIn ? <Button type="button" variant="outline" onClick={() => { setSelectedPackage(plan); setOrderError(""); setOrderReference(""); }} className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
                   REQUEST THIS VPS <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                </Button> : <Button asChild variant="outline" className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
+                  <Link to="/auth">SIGN IN TO ORDER <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>}
               </article>
             ))}
           </div>
