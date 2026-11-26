@@ -6,7 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import logo from "@/assets/logo-mopsentry-a-clean.png";
 
 export const Route = createFileRoute("/vps")({
@@ -52,7 +52,7 @@ function VpsPage() {
     setLatestOrder(data ?? null);
   };
 
-  const submitVpsOrder = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submitVpsOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedPackage || submitting) return;
     setSubmitting(true); setOrderError(""); setOrderReference("");
