@@ -16,7 +16,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedControlRouteImport } from './routes/_authenticated/control'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedMarketReportRouteImport } from './routes/_authenticated/market-report'
 import { Route as AuthenticatedSignalsRouteImport } from './routes/_authenticated/signals'
 import { Route as ApiPublicEaCheckinRouteImport } from './routes/api/public/ea-checkin'
 import { Route as ApiPublicFundamentalHistoryRouteImport } from './routes/api/public/fundamental-history'
@@ -55,12 +54,6 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedMarketReportRoute =
-  AuthenticatedMarketReportRouteImport.update({
-    id: '/market-report',
-    path: '/market-report',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedSignalsRoute = AuthenticatedSignalsRouteImport.update({
   id: '/signals',
   path: '/signals',
@@ -85,7 +78,6 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/control': typeof AuthenticatedControlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/market-report': typeof AuthenticatedMarketReportRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/api/public/ea-checkin': typeof ApiPublicEaCheckinRoute
   '/api/public/fundamental-history': typeof ApiPublicFundamentalHistoryRoute
@@ -97,7 +89,6 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountRoute
   '/control': typeof AuthenticatedControlRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/market-report': typeof AuthenticatedMarketReportRoute
   '/signals': typeof AuthenticatedSignalsRoute
   '/api/public/ea-checkin': typeof ApiPublicEaCheckinRoute
   '/api/public/fundamental-history': typeof ApiPublicFundamentalHistoryRoute
@@ -111,7 +102,6 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/control': typeof AuthenticatedControlRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/market-report': typeof AuthenticatedMarketReportRoute
   '/_authenticated/signals': typeof AuthenticatedSignalsRoute
   '/api/public/ea-checkin': typeof ApiPublicEaCheckinRoute
   '/api/public/fundamental-history': typeof ApiPublicFundamentalHistoryRoute
@@ -125,7 +115,6 @@ export interface FileRouteTypes {
     | '/account'
     | '/control'
     | '/dashboard'
-    | '/market-report'
     | '/signals'
     | '/api/public/ea-checkin'
     | '/api/public/fundamental-history'
@@ -136,7 +125,6 @@ export interface FileRouteTypes {
     | '/account'
     | '/control'
     | '/dashboard'
-    | '/market-report'
     | '/signals'
     | '/api/public/ea-checkin'
     | '/api/public/fundamental-history'
@@ -148,7 +136,6 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/control'
     | '/_authenticated/dashboard'
-    | '/_authenticated/market-report'
     | '/_authenticated/signals'
     | '/api/public/ea-checkin'
     | '/api/public/fundamental-history'
@@ -213,13 +200,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/market-report': {
-      id: '/_authenticated/market-report'
-      path: '/market-report'
-      fullPath: '/market-report'
-      preLoaderRoute: typeof AuthenticatedMarketReportRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/signals': {
       id: '/_authenticated/signals'
       path: '/signals'
@@ -248,7 +228,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedControlRoute: typeof AuthenticatedControlRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedMarketReportRoute: typeof AuthenticatedMarketReportRoute
   AuthenticatedSignalsRoute: typeof AuthenticatedSignalsRoute
 }
 
@@ -256,7 +235,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedControlRoute: AuthenticatedControlRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedMarketReportRoute: AuthenticatedMarketReportRoute,
   AuthenticatedSignalsRoute: AuthenticatedSignalsRoute,
 }
 
