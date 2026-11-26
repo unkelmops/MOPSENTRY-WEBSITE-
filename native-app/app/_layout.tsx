@@ -63,6 +63,8 @@ function AppTabs() {
         <Tabs.Screen name="broker-connections" options={{ href: null }} />
         <Tabs.Screen name="direct-accounts" options={{ href: null }} />
         <Tabs.Screen name="vps" options={{ href: null }} />
+        <Tabs.Screen name="auth/callback" options={{ href: null }} />
+        <Tabs.Screen name="auth/reset-password" options={{ href: null }} />
       </Tabs>
     </>
   );
