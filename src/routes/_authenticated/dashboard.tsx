@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  ArrowUpRight,
-  BrainCircuit,
   Clock3,
   Link2,
   Power,
