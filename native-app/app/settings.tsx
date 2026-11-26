@@ -173,6 +173,8 @@ export default function SettingsScreen() {
           <Text style={styles.body}>Hidden by default. Copying hides it again and marks the Android clipboard entry as sensitive.</Text>
         </View>
 
+        <Pressable onPress={() => router.push("/vps")} style={styles.connectionLink}><View style={{ flex: 1 }}><Text style={styles.connectionTitle}>MOPSENTRY VPS Packages</Text><Text style={styles.body}>Choose a subscription term and view your VPS assignment and renewal status.</Text></View><Text style={styles.connectionArrow}>›</Text></Pressable>
+
         <Pressable onPress={() => router.push("/broker-connections")} style={styles.connectionLink}><View style={{ flex: 1 }}><Text style={styles.connectionTitle}>Broker connections</Text><Text style={styles.body}>View available connection methods and setup status.</Text></View><Text style={styles.connectionArrow}>›</Text></Pressable>
 
         <View style={styles.card}>
