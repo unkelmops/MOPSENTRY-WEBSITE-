@@ -150,7 +150,7 @@ export default function SettingsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Trading account</Text>
-          <Text style={styles.body}>Use demo account details for testing. Do not enter broker passwords here.</Text>
+          <Text style={styles.body}>Enter the account details associated with your MOPSENTRY EA. Do not enter broker passwords here.</Text>
           <View style={styles.platformRow}>
             {["mt5", "mt4"].map(value => <Pressable key={value} onPress={() => setPlatform(value)} style={[styles.platformButton, platform === value && styles.platformActive]}><Text style={[styles.platformText, platform === value && styles.platformTextActive]}>{value.toUpperCase()}</Text></Pressable>)}
           </View>
