@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import logo from "@/assets/logo-mopsentry-a-clean.png";
@@ -33,8 +32,6 @@ const steps = [
 ];
 
 function VpsPage() {
-  const navigate = useNavigate();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const [billingMonths, setBillingMonths] = useState<3 | 6 | 12>(3);
   useEffect(() => {
@@ -96,10 +93,10 @@ function VpsPage() {
                   <li key={item} className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />{item}</li>
                 ))}
               </ul>
-              <Button onClick={startCheckout} disabled={true} className="mt-8 h-11 w-full rounded-xl bg-slate-700 font-semibold text-slate-300">
-                VPS subscriptions opening soon
-              </Button>
-              <p className="mt-3 text-center text-[10px] leading-5 text-slate-500">Checkout stays disabled until supplier terms, final pricing and PayFast verification are complete.</p>
+              <div className="mt-8 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.08] p-3 text-center">
+                <p className="text-sm font-black tracking-wide text-emerald-200">VPS ORDER REQUESTS OPEN</p>
+                <p className="mt-1 text-[11px] leading-5 text-slate-300">Choose a package below and send your request. Payment integration is still being prepared.</p>
+              </div>
             </div>
           </aside>
         </section>
@@ -134,8 +131,10 @@ function VpsPage() {
                 <ul className="mt-4 space-y-2 text-xs text-slate-300">
                   {["Genuine Windows Server licence", "RDP and Administrator access", "NVMe storage and 1 Gbps uplink", "DDoS protection and 24/7 support", "MOPSENTRY setup coordination"].map((item) => <li key={item} className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" />{item}</li>)}
                 </ul>
-                <Button onClick={() => toast.message("VPS ordering will open once MOPSENTRY finalises hosting and fulfilment arrangements.")} variant="outline" className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
-                  {signedIn ? "Select package · opening soon" : "Sign in to select"}
+                <Button asChild variant="outline" className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
+                  <a href={`https://wa.me/27732661557?text=${encodeURIComponent(`Hi MOPSENTRY, I would like to request the ${plan.name} VPS package for ${billingMonths} months. Please confirm availability, final price and setup details.`)}`} target="_blank" rel="noreferrer">
+                    REQUEST THIS VPS <ArrowRight className="ml-2 h-4 w-4" />
+                  </a>
                 </Button>
               </article>
             ))}
@@ -171,12 +170,20 @@ function VpsPage() {
         </section>
 
         <section className="mb-10 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-amber-200"><ShieldCheck className="h-4 w-4" /> Payment and service status</div>
-          <p className="mt-2 text-sm leading-6 text-slate-400">PayFast checkout is being prepared in sandbox mode. No final monthly price or hardware specification is published yet. Checkout remains disabled until MOPSENTRY verifies the reseller service and payment setup. Your account will then show payment confirmation, renewal dates and VPS assignment status.</p>
-          <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-2"><CreditCard className="h-4 w-4" /> Secure payment integration planned</span>
-            <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4" /> Monthly renewal tracking planned</span>
-            <span className="inline-flex items-center gap-2"><Zap className="h-4 w-4" /> Provisioning after verified payment</span>
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-200"><ShieldCheck className="h-4 w-4" /> PAYMENT INTEGRATION IN PROGRESS</div>
+          <p className="mt-2 text-sm leading-6 text-slate-300">VPS order requests are open. We are preparing card payments and bank / EFT payments. Sending a request does not take payment or guarantee immediate provisioning. MOPSENTRY will confirm package availability, final pricing and fulfilment before any payment is requested.</p>
+          <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-400">
+            <span className="inline-flex items-center gap-2"><CreditCard className="h-4 w-4" /> Card payments planned</span>
+            <span className="inline-flex items-center gap-2"><Zap className="h-4 w-4" /> Bank / EFT payments planned</span>
+            <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4" /> Order confirmation by MOPSENTRY</span>
+          </div>
+          <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+            <p className="text-sm font-bold text-white">CONTACT MOPSENTRY</p>
+            <div className="mt-3 flex flex-wrap gap-4 text-sm">
+              <a className="inline-flex items-center gap-2 text-cyan-200 hover:text-white" href="https://wa.me/27732661557" target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4" /> 073 266 1557</a>
+              <a className="inline-flex items-center gap-2 text-cyan-200 hover:text-white" href="mailto:thabopopane2@gmail.com"><Mail className="h-4 w-4" /> thabopopane2@gmail.com</a>
+              <a className="inline-flex items-center gap-2 text-cyan-200 hover:text-white" href="tel:+27732661557"><Phone className="h-4 w-4" /> Call</a>
+            </div>
           </div>
         </section>
 
