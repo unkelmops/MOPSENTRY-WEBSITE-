@@ -34,11 +34,46 @@ const steps = [
 function VpsPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [billingMonths, setBillingMonths] = useState<3 | 6 | 12>(3);
+  const [selectedPackage, setSelectedPackage] = useState<{name:string;monthly:number}|null>(null);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState("");
+  const [orderReference, setOrderReference] = useState("");
+  const [latestOrder, setLatestOrder] = useState<any>(null);
+
+  const loadLatestOrder = async () => {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) return;
+    const db = supabase as any;
+    const { data } = await db.from("vps_orders").select("id,order_reference,status,package_name,term_months,amount_minor,currency,created_at,email_status")
+      .eq("user_id", session.session.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    setLatestOrder(data ?? null);
+  };
+
+  const submitVpsOrder = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPackage || submitting) return;
+    setSubmitting(true); setOrderError(""); setOrderReference("");
+    try {
+      const { data, error } = await supabase.functions.invoke("mopsentry-vps-order", {
+        body: { packageCode: selectedPackage.name.toLowerCase(), termMonths: billingMonths, customerName, customerPhone, customerNotes },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Unable to submit your VPS order.");
+      setOrderReference(data.order.order_reference);
+      setSelectedPackage(null); setCustomerName(""); setCustomerPhone(""); setCustomerNotes("");
+      await loadLatestOrder();
+    } catch (error) {
+      setOrderError(error instanceof Error ? error.message : "Unable to submit your VPS order.");
+    } finally { setSubmitting(false); }
+  };
   useEffect(() => {
     let mounted = true;
     void supabase.auth.getSession().then(({ data }) => { if (mounted) setSignedIn(!!data.session); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) setSignedIn(!!session); });
-    return () => { mounted = false; listener.subscription.unsubscribe(); };
+    void loadLatestOrder();\n    return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#070b14] text-white">
@@ -95,7 +130,7 @@ function VpsPage() {
               </ul>
               <div className="mt-8 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.08] p-3 text-center">
                 <p className="text-sm font-black tracking-wide text-emerald-200">VPS ORDER REQUESTS OPEN</p>
-                <p className="mt-1 text-[11px] leading-5 text-slate-300">Choose a package below and send your request. Payment integration is still being prepared.</p>
+                <p className="mt-1 text-[11px] leading-5 text-slate-300">Submit an order request. Payment is not available yet; our team will contact you and arrange the next steps manually.</p>
               </div>
             </div>
           </aside>
@@ -106,7 +141,7 @@ function VpsPage() {
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">MOPSENTRY VPS packages</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Choose the power behind your MT5 setup.</h2>
             <p className="mt-3 text-sm leading-6 text-slate-400">Five Windows VPS options, presented and managed under the MOPSENTRY brand. Choose a subscription term that suits your budget.</p>
-            <p className="mt-3 text-[11px] leading-5 text-amber-200/80">Choose your subscription period and send an order request. Payment is not collected yet; we will contact you to confirm availability and next steps.</p>
+            <p className="mt-3 text-[11px] leading-5 text-amber-200/80">Choose your subscription period and submit a tracked order request. No payment is collected. MOPSENTRY will confirm availability, final pricing and fulfilment manually.</p>
           </div>
           <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Subscription duration">{([{months:3,label:"3 months"},{months:6,label:"6 months"},{months:12,label:"1 year"}] as const).map((term) => <button key={term.months} type="button" aria-pressed={billingMonths === term.months} onClick={() => setBillingMonths(term.months)} className={cn("rounded-lg px-4 py-2 text-xs font-bold",billingMonths === term.months ? "bg-blue-500 text-white" : "bg-white/5 text-slate-300")}>{term.label}</button>)}</div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -131,10 +166,8 @@ function VpsPage() {
                 <ul className="mt-4 space-y-2 text-xs text-slate-300">
                   {["Genuine Windows Server licence", "RDP and Administrator access", "NVMe storage and 1 Gbps uplink", "DDoS protection and 24/7 support", "MOPSENTRY setup coordination"].map((item) => <li key={item} className="flex gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-300" />{item}</li>)}
                 </ul>
-                <Button asChild variant="outline" className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
-                  <a href={`https://wa.me/27732661557?text=${encodeURIComponent(`Hi MOPSENTRY, I would like to request the ${plan.name} VPS package for ${billingMonths} months. Please confirm availability, final price and setup details.`)}`} target="_blank" rel="noreferrer">
-                    REQUEST THIS VPS <ArrowRight className="ml-2 h-4 w-4" />
-                  </a>
+                <Button type="button" variant="outline" onClick={() => { setSelectedPackage(plan); setOrderError(""); setOrderReference(""); }} className="mt-5 h-10 w-full rounded-xl border-blue-300/25 bg-blue-400/10 text-cyan-100 hover:bg-blue-400/20 hover:text-white">
+                  REQUEST THIS VPS <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </article>
             ))}
@@ -142,6 +175,21 @@ function VpsPage() {
           <p className="mt-4 text-[10px] leading-5 text-slate-500">*Prices shown are provisional MOPSENTRY customer prices. The selected term total is calculated from the displayed monthly rate; any final discounts, taxes or fees will be shown clearly before payment. No payment is currently required.</p>
         </section>
 
+        {selectedPackage && <section id="vps-order-form" className="my-8 rounded-2xl border border-cyan-300/20 bg-blue-400/[0.06] p-5 sm:p-7">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Order request</p>
+          <h2 className="mt-2 text-2xl font-black">{selectedPackage.name} · {billingMonths} months</h2>
+          <p className="mt-2 text-sm text-slate-300">Provisional total: R{(selectedPackage.monthly * billingMonths).toLocaleString("en-ZA")}. This is a request only — no payment is collected and no VPS is provisioned automatically.</p>
+          <form onSubmit={submitVpsOrder} className="mt-5 grid gap-3 sm:grid-cols-2">
+            <label className="text-xs text-slate-300">Full name<input required maxLength={100} value={customerName} onChange={e=>setCustomerName(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-[#0b1220] px-3 py-3 text-sm text-white outline-none focus:border-cyan-300" placeholder="Your full name" /></label>
+            <label className="text-xs text-slate-300">Phone / WhatsApp<input required maxLength={30} value={customerPhone} onChange={e=>setCustomerPhone(e.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-[#0b1220] px-3 py-3 text-sm text-white outline-none focus:border-cyan-300" placeholder="e.g. 073 000 0000" /></label>
+            <label className="text-xs text-slate-300 sm:col-span-2">Additional notes (optional)<textarea maxLength={500} value={customerNotes} onChange={e=>setCustomerNotes(e.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-white/15 bg-[#0b1220] px-3 py-3 text-sm text-white outline-none focus:border-cyan-300" placeholder="Anything we should know?" /></label>
+            <div className="sm:col-span-2 rounded-lg border border-amber-300/20 bg-amber-300/[0.06] p-3 text-xs leading-5 text-amber-100">PAYMENT SYSTEM NOT YET AVAILABLE. You can still place your VPS order. MOPSENTRY will contact you to arrange payment and confirm supplier availability manually. Submitting this form does not charge you.</div>
+            {orderError && <p role="alert" className="text-sm text-rose-300 sm:col-span-2">{orderError}</p>}
+            <div className="flex gap-2 sm:col-span-2"><Button type="submit" disabled={submitting} className="bg-blue-500 text-white hover:bg-blue-400">{submitting ? "SUBMITTING…" : "SUBMIT VPS ORDER"}</Button><Button type="button" variant="outline" onClick={()=>setSelectedPackage(null)} className="border-white/15 bg-white/5 text-white">CANCEL</Button></div>
+          </form>
+        </section>}
+        {orderReference && <div role="status" className="my-5 rounded-xl border border-emerald-300/25 bg-emerald-300/[0.07] p-4 text-sm text-emerald-100"><strong>ORDER RECEIVED · {orderReference}</strong><p className="mt-1 text-xs leading-5 text-slate-300">Your request is saved. No payment was collected. MOPSENTRY will contact you to confirm availability, final pricing and fulfilment. Email confirmation will be sent once the Formspree connection is configured.</p></div>}
+        {latestOrder && <div className="my-5 rounded-xl border border-white/10 bg-white/[0.04] p-4"><p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Latest VPS order</p><p className="mt-2 font-bold">{latestOrder.order_reference} · {latestOrder.package_name || "VPS"} · {latestOrder.term_months || "—"} months</p><p className="mt-1 text-xs text-slate-300">Status: {String(latestOrder.status).replaceAll("_"," ").toUpperCase()} · R{(latestOrder.amount_minor/100).toLocaleString("en-ZA",{minimumFractionDigits:2})}</p></div>}
         <section className="grid gap-3 border-t border-white/10 py-10 sm:grid-cols-3">
           {benefits.map(({ icon: Icon, title, text }) => (
             <article key={title} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
@@ -156,7 +204,7 @@ function VpsPage() {
           <div className="max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">Simple subscription flow</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">How managed VPS works</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400">You pay MOPSENTRY for the managed VPS subscription. We coordinate the hosting subscription with our VPS provider and manage your service status.</p>
+            <p className="mt-3 text-sm leading-6 text-slate-400">Submit an order request first. MOPSENTRY reviews supplier availability and confirms the final price; payment and provisioning are arranged manually after confirmation.</p>
           </div>
           <div className="mt-7 grid gap-3 md:grid-cols-3">
             {steps.map((step) => (
@@ -171,7 +219,7 @@ function VpsPage() {
 
         <section className="mb-10 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-amber-200"><ShieldCheck className="h-4 w-4" /> PAYMENT INTEGRATION IN PROGRESS</div>
-          <p className="mt-2 text-sm leading-6 text-slate-300">VPS order requests are open. We are preparing card payments and bank / EFT payments. Sending a request does not take payment or guarantee immediate provisioning. MOPSENTRY will confirm package availability, final pricing and fulfilment before any payment is requested.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">VPS order requests are open, but the payment system is not yet available. You can still submit an order. MOPSENTRY will contact you to arrange payment manually after confirming supplier availability and final pricing. No payment is collected and no immediate provisioning is promised.</p>
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-400">
             <span className="inline-flex items-center gap-2"><CreditCard className="h-4 w-4" /> Card payments planned</span>
             <span className="inline-flex items-center gap-2"><Zap className="h-4 w-4" /> Bank / EFT payments planned</span>
