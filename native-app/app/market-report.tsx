@@ -5,6 +5,7 @@ import { supabase } from "../src/lib/supabase";
 import { palette } from "../src/lib/theme";
 import { BrandHeader } from "../src/components/BrandHeader";
 import { AmbientBackground } from "../src/components/AmbientBackground";
+import { analyseMarketCandles } from "../src/lib/market-analysis";
 
 type Quote = { source: string; provider_symbol: string; bid: number | null; ask: number | null; last: number | null; observed_at: string };
 type Candle = { candle_open_at: string; open: number; high: number; low: number; close: number; tick_volume: number | null };
@@ -155,6 +156,16 @@ export default function MarketReportScreen() {
   const brokerHealth = health.find(h => h.source === "mt5_broker");
   const brokerFresh = Boolean(broker && brokerHealth?.status === "healthy" && Date.now() - new Date(broker.observed_at).getTime() >= 0 && Date.now() - new Date(broker.observed_at).getTime() < 60_000);
   const selected = useMemo(() => symbols.find(item => item.symbol === symbol), [symbol]);
+  const analysis = useMemo(() => analyseMarketCandles(candles), [candles]);
+  const analysisDetails: Record<string, string> = {
+    news: "The high-impact USD calendar is available in Events and Signals. A verified headline and session-news feed is not connected to this report yet.",
+    structure: analysis.trend.toUpperCase() + " trend. " + analysis.trendNote + " Structure: " + analysis.structure + ". Latest swing high: " + price(analysis.swingHigh) + " · swing low: " + price(analysis.swingLow) + ".",
+    crt: "Recent 20-candle range: high " + price(analysis.rangeHigh) + " · low " + price(analysis.rangeLow) + " · midpoint " + price(analysis.rangeMid) + ". Current close is " + analysis.rangeState + ".",
+    liquidity: analysis.liquidity.toUpperCase() + (analysis.liquidityLevel === null ? "" : " near " + price(analysis.liquidityLevel)) + ". Calculated from validated swing pivots; this is not an order instruction.",
+    strategies: "The full 30-check strategy consensus engine is not yet connected to the native app. No consensus or direction is fabricated.",
+    setup: "No entry, stop-loss or take-profit is issued by this report. A verified strategy engine and execution-ready setup validation are required first.",
+    history: "Prediction history and accuracy are unavailable until timestamped predictions are stored and evaluated against later verified prices.",
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -191,7 +202,7 @@ export default function MarketReportScreen() {
           const open = expanded === section.id;
           return <Pressable key={section.id} onPress={() => setExpanded(open ? null : section.id)} style={[styles.analysisCard, open && styles.analysisCardOpen]}>
             <View style={styles.analysisTop}><View style={styles.analysisIcon}><Text style={styles.analysisNumber}>0{index + 1}</Text></View><Text style={styles.analysisTitle}>{section.title}</Text><Text style={styles.chevron}>{open ? "−" : "+"}</Text></View>
-            {open ? <Text style={styles.analysisDetail}>{section.detail}</Text> : <Text style={styles.analysisHint}>Tap to explore this section</Text>}
+            {open ? <Text style={styles.analysisDetail}>{analysisDetails[section.id] ?? section.detail}</Text> : <Text style={styles.analysisHint}>Tap to explore this section</Text>}
           </Pressable>;
         })}
         {loading && <View style={styles.loadingRow}><ActivityIndicator color={palette.blue}/><Text style={styles.muted}>Refreshing market data…</Text></View>}
