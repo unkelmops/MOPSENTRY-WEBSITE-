@@ -145,7 +145,6 @@ function Dashboard() {
           },
           () => {
             void qc.invalidateQueries({ queryKey: tradingAccountQuery.queryKey });
-      void qc.invalidateQueries({ queryKey: tradingAccountBalanceQuery.queryKey });
             void qc.invalidateQueries({ queryKey: tradingAccountBalanceQuery.queryKey });
           },
         )
@@ -210,6 +209,7 @@ function Dashboard() {
       setCloseDialogOpen(false);
       toast.success("Close All request queued. Waiting for the MT5 EA to receive it.");
       void qc.invalidateQueries({ queryKey: tradingAccountQuery.queryKey });
+      void qc.invalidateQueries({ queryKey: tradingAccountBalanceQuery.queryKey });
     },
     onError: (error: Error) => toast.error(error.message || "Could not queue Close All request."),
   });
