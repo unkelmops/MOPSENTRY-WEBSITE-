@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import type { Trade } from "@/lib/demo-data";
 import { supabase } from "@/integrations/supabase/client";
 import { robotSettingsQuery } from "@/lib/robot-settings";
-import { tradingAccountQuery } from "@/lib/trading-account";
+import { tradingAccountBalanceQuery, tradingAccountQuery } from "@/lib/trading-account";
 import { saveRobotSettings } from "@/lib/robot-settings";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     Promise.all([
       context.queryClient.ensureQueryData(robotSettingsQuery),
       context.queryClient.ensureQueryData(tradingAccountQuery),
+      context.queryClient.ensureQueryData(tradingAccountBalanceQuery),
     ]),
   pendingComponent: DashboardLoading,
   component: Dashboard,
@@ -72,6 +73,8 @@ function Dashboard() {
   const qc = useQueryClient();
   const { data: s } = useSuspenseQuery(robotSettingsQuery);
   const { data: ta } = useSuspenseQuery(tradingAccountQuery);
+  const { data: taBalance } = useSuspenseQuery(tradingAccountBalanceQuery);
+  const accountSnapshot = taBalance ?? ta;
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [breakEvenDialogOpen, setBreakEvenDialogOpen] = useState(false);
   const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
@@ -79,7 +82,7 @@ function Dashboard() {
   const [displayCurrency, setDisplayCurrency] = useState("ZAR");
   useEffect(() => { const sync = () => { try { const saved = localStorage.getItem("mopsentry-currency"); if (saved && /^[A-Z]{3}$/.test(saved)) setDisplayCurrency(saved); } catch { /* optional storage */ } }; sync(); window.addEventListener("mopsentry-currency-change", sync); return () => window.removeEventListener("mopsentry-currency-change", sync); }, []);
   const [conversionRate, setConversionRate] = useState<number | null>(null);
-  const accountCurrency = ta.account_currency?.toUpperCase() ?? null;
+  const accountCurrency = accountSnapshot.account_currency?.toUpperCase() ?? null;
   useEffect(() => {
     let active = true;
     const loadRate = async () => {
@@ -142,6 +145,8 @@ function Dashboard() {
           },
           () => {
             void qc.invalidateQueries({ queryKey: tradingAccountQuery.queryKey });
+      void qc.invalidateQueries({ queryKey: tradingAccountBalanceQuery.queryKey });
+            void qc.invalidateQueries({ queryKey: tradingAccountBalanceQuery.queryKey });
           },
         )
         .subscribe();
@@ -153,16 +158,16 @@ function Dashboard() {
     };
   }, [qc]);
 
-  const lastBeat = ta.last_heartbeat ? new Date(ta.last_heartbeat) : null;
+  const lastBeat = accountSnapshot.last_heartbeat ? new Date(accountSnapshot.last_heartbeat) : null;
   const heartbeatAge = lastBeat ? Date.now() - lastBeat.getTime() : Number.POSITIVE_INFINITY;
   const fresh = Boolean(
-    ta.status === "connected" && ta.balance != null && Number.isFinite(heartbeatAge) && heartbeatAge >= 0 && heartbeatAge < 30_000,
+    accountSnapshot.status === "connected" && accountSnapshot.balance != null && Number.isFinite(heartbeatAge) && heartbeatAge >= 0 && heartbeatAge < 30_000,
   );
-  const compatibleEA = fresh && ta.ea_version === "1.76";
-  const balance = fresh ? Number(ta.balance) : null;
-  const equity = fresh ? Number(ta.equity ?? ta.balance) : null;
+  const compatibleEA = fresh && accountSnapshot.ea_version === "1.76";
+  const balance = fresh ? Number(accountSnapshot.balance) : null;
+  const equity = fresh ? Number(accountSnapshot.equity ?? accountSnapshot.balance) : null;
   const floatingPnl = balance != null && equity != null ? equity - balance : null;
-  const connectionLabel = fresh ? "MT5 connected" : ta.last_heartbeat ? (heartbeatAge >= 0 && heartbeatAge < 120_000 ? "Connection stale" : "Disconnected") : "Waiting for MT5 data";
+  const connectionLabel = fresh ? "MT5 connected" : accountSnapshot.last_heartbeat ? (heartbeatAge >= 0 && heartbeatAge < 120_000 ? "Connection stale" : "Disconnected") : "Waiting for MT5 data";
   const rawTrades = (ta.open_trades ?? []) as Array<Record<string, unknown>>;
   const pendingOrders = fresh ? ((ta.pending_orders ?? []) as Array<Record<string, unknown>>) : [];
   const trades: Trade[] = fresh
