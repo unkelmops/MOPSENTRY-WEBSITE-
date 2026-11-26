@@ -12,8 +12,8 @@ import { AmbientBackground } from "../src/components/AmbientBackground";
 
 type AuthMode = "sign-in" | "sign-up" | "forgot";
 
-const websiteResetUrl = "https://unkelmops.github.io/MOPSENTRY-WEBSITE-/auth?mode=recovery";
-const websiteConfirmUrl = "https://unkelmops.github.io/MOPSENTRY-WEBSITE-/dashboard";
+const nativeAuthRedirect = "mopsentry://auth/callback";
+const nativeRecoveryRedirect = "mopsentry://auth/callback?flow=recovery";
 
 export default function SignInScreen() {
   const [mode, setMode] = useState<AuthMode>("sign-in");
@@ -50,19 +50,19 @@ export default function SignInScreen() {
       } else if (mode === "sign-up") {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(), password,
-          options: { emailRedirectTo: websiteConfirmUrl },
+          options: { emailRedirectTo: nativeAuthRedirect },
         });
         if (error) { setMessageKind("error"); setMessage(error.message); }
         else if (!data.session) {
           setMessageKind("success");
-          setMessage("Account request received. Check your inbox and spam folder for the confirmation email. Once confirmed, return here to sign in.");
+          setMessage("Account request received. Open the confirmation email on this iPhone to return to MOPSENTRY and finish setup.");
         } else router.replace("/home");
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: websiteResetUrl });
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: nativeRecoveryRedirect });
         if (error) { setMessageKind("error"); setMessage(error.message); }
         else {
           setMessageKind("success");
-          setMessage("If an account exists for this email, a reset link will be sent. Open it to reset your password on the secure MOPSENTRY page, then return here to sign in.");
+          setMessage("If an account exists for this email, a reset link will be sent. Open it on this iPhone to complete the password reset inside MOPSENTRY.");
         }
       }
     } catch (e) {
