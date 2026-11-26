@@ -74,7 +74,8 @@ function VpsPage() {
     void supabase.auth.getSession().then(({ data }) => { if (mounted) setSignedIn(!!data.session); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) setSignedIn(!!session); });
     void loadLatestOrder();
-    return () => { mounted = false; listener.subscription.unsubscribe(); };
+    const orderTimer = window.setInterval(() => { if (mounted) void loadLatestOrder(); }, 15000);
+    return () => { mounted = false; window.clearInterval(orderTimer); listener.subscription.unsubscribe(); };
   }, []);
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#070b14] text-white">
