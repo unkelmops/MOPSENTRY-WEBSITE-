@@ -82,7 +82,7 @@ function Index() {
               </div>
               <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
                 <div className="flex items-center gap-2 text-cyan-200"><Cloud className="h-5 w-5" /><span className="text-xs font-bold uppercase tracking-wider">Managed VPS</span></div>
-                <p className="mt-2 text-sm leading-6 text-slate-300">Optional Windows VPS packages are listed separately. Final ordering and payment will open once supplier terms are confirmed.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-300">Optional Windows VPS packages are listed separately. VPS order requests are open; card and bank / EFT payment options are being prepared.</p>
                 <Button asChild variant="outline" className="mt-3 w-full rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/vps">View VPS packages <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
               </div>
               <Button asChild className="w-full rounded-xl bg-blue-500 text-white hover:bg-blue-400"><Link to="/auth">Register / sign in <ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button>
@@ -124,11 +124,11 @@ function Index() {
                 <div className="space-y-3">
                   {[
                     ["01", "Choose a package", "Compare the five Windows VPS tiers on the MOPSENTRY VPS page."],
-                    ["02", "Place your request", "When ordering opens, submit your package request from your signed-in MOPSENTRY account."],
+                    ["02", "Place your request", "Choose a package and send an order request directly to MOPSENTRY. Payment is not collected until availability, final pricing and fulfilment are confirmed."],
                     ["03", "Setup and support", "MOPSENTRY coordinates the hosting subscription and helps with your initial MT5 setup."],
                   ].map(([number, title, text]) => <div key={number} className="flex gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4"><span className="text-xs font-bold text-cyan-300">{number}</span><div><h3 className="text-sm font-semibold">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-400">{text}</p></div></div>)}
                 </div>
-                <p className="text-xs leading-5 text-amber-200/80">VPS ordering and payment are not yet active. No deposit or payment is required to view packages.</p>
+                <p className="text-xs leading-5 text-amber-200/80">VPS order requests are open. Payment integration is still in progress; submitting a request does not take payment or guarantee immediate provisioning.</p>
                 <Button asChild className="w-full rounded-xl bg-blue-500 text-white hover:bg-blue-400"><Link to="/vps">Explore VPS packages <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
               </InfoDialog>
             </div>
