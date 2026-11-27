@@ -1,15 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import {
-  Activity,
-  AlertTriangle,
-  Clock3,
-  Link2,
-  Power,
-  RefreshCw,
-  TrendingUp,
-} from "lucide-react";
+import { Link2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -21,10 +13,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import type { Trade } from "@/lib/demo-data";
 import { supabase } from "@/integrations/supabase/client";
 import { robotSettingsQuery } from "@/lib/robot-settings";
-import { tradingAccountBalanceQuery, tradingAccountQuery } from "@/lib/trading-account";
+import { tradingAccountQuery } from "@/lib/trading-account";
 import { saveRobotSettings } from "@/lib/robot-settings";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +26,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     Promise.all([
       context.queryClient.ensureQueryData(robotSettingsQuery),
       context.queryClient.ensureQueryData(tradingAccountQuery),
-      context.queryClient.ensureQueryData(tradingAccountBalanceQuery),
     ]),
   pendingComponent: DashboardLoading,
   component: Dashboard,
@@ -71,9 +61,7 @@ function Dashboard() {
   const qc = useQueryClient();
   const { data: s } = useSuspenseQuery(robotSettingsQuery);
   const { data: ta } = useSuspenseQuery(tradingAccountQuery);
-  const { data: taBalance } = useSuspenseQuery(tradingAccountBalanceQuery);
-  const accountSnapshot = taBalance ?? ta;
-  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const accountSnapshot = ta;
   const [breakEvenDialogOpen, setBreakEvenDialogOpen] = useState(false);
   const [breakEvenTrigger, setBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
   const [savedBreakEvenTrigger, setSavedBreakEvenTrigger] = useState(String(s.break_even_trigger ?? 10));
@@ -143,7 +131,6 @@ function Dashboard() {
           },
           () => {
             void qc.invalidateQueries({ queryKey: tradingAccountQuery.queryKey });
-            void qc.invalidateQueries({ queryKey: tradingAccountBalanceQuery.queryKey });
           },
         )
         .subscribe();
@@ -158,61 +145,12 @@ function Dashboard() {
   const lastBeat = accountSnapshot.last_heartbeat ? new Date(accountSnapshot.last_heartbeat) : null;
   const heartbeatAge = lastBeat ? Date.now() - lastBeat.getTime() : Number.POSITIVE_INFINITY;
   const fresh = Boolean(
-    accountSnapshot.status === "connected" && accountSnapshot.balance != null && Number.isFinite(heartbeatAge) && heartbeatAge >= 0 && heartbeatAge < 30_000,
+    accountSnapshot.status === "connected" && accountSnapshot.balance != null && Number.isFinite(heartbeatAge) && heartbeatAge >= 0 && heartbeatAge < 90_000,
   );
-  const compatibleEA = fresh && accountSnapshot.ea_version === "1.76";
   const balance = fresh ? Number(accountSnapshot.balance) : null;
-  const equity = fresh ? Number(accountSnapshot.equity ?? accountSnapshot.balance) : null;
-  const floatingPnl = balance != null && equity != null ? equity - balance : null;
+  const openTradeCount = fresh ? Number(accountSnapshot.open_trade_count ?? 0) : null;
+  const pendingOrderCount = fresh ? Number(accountSnapshot.pending_order_count ?? 0) : null;
   const connectionLabel = fresh ? "MT5 connected" : accountSnapshot.last_heartbeat ? (heartbeatAge >= 0 && heartbeatAge < 120_000 ? "Connection stale" : "Disconnected") : "Waiting for MT5 data";
-  const rawTrades = (ta.open_trades ?? []) as Array<Record<string, unknown>>;
-  const pendingOrders = fresh ? ((ta.pending_orders ?? []) as Array<Record<string, unknown>>) : [];
-  const trades: Trade[] = fresh
-    ? rawTrades.map((t, i) => ({
-        id: String(t["ticket"] ?? `${String(t["symbol"] ?? "position")}-${i}`),
-        pair: String(t["symbol"] ?? t["pair"] ?? ""),
-        side: t["side"] === "SELL" ? "SELL" : "BUY",
-        lots: Number(t["lots"] ?? t["volume"] ?? 0),
-        open: Number(t["open_price"] ?? t["open"] ?? 0),
-        current: Number(t["current_price"] ?? t["current"] ?? 0),
-        pnl: Number(t["profit"] ?? t["pnl"] ?? 0),
-      }))
-    : [];
-
-  const closeAll = useMutation({
-    mutationFn: async () => {
-      const { data: auth, error: authError } = await supabase.auth.getUser();
-      if (authError || !auth.user) throw new Error("Please sign in again before sending a trading command.");
-      if (!fresh) throw new Error("MT5 connection is not fresh. Reconnect before sending Close All.");
-      if (!compatibleEA) throw new Error("Install and compile MOPSENTRY EA v1.76 first. Older versions cannot receive this app command.");
-      if (rawTrades.length === 0) throw new Error("MT5 reports no open positions.");
-      const { data: existingCommand, error: existingCommandError } = await supabase
-        .from("robot_commands")
-        .select("id")
-        .eq("user_id", auth.user.id)
-        .eq("status", "pending")
-        .limit(1)
-        .maybeSingle();
-      if (existingCommandError) throw existingCommandError;
-      if (existingCommand) throw new Error("A Close All request is already waiting for MT5. Wait for it to be acknowledged before sending another.");
-      const { data, error } = await supabase
-        .from("robot_commands")
-        .insert({ user_id: auth.user.id, command: "CLOSE_ALL", status: "pending" })
-        .select("id, status, created_at")
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      setCloseDialogOpen(false);
-      toast.success("Close All request queued. Waiting for the MT5 EA to receive it.");
-      void qc.invalidateQueries({ queryKey: tradingAccountQuery.queryKey });
-      void qc.invalidateQueries({ queryKey: tradingAccountBalanceQuery.queryKey });
-    },
-    onError: (error: Error) => toast.error(error.message || "Could not queue Close All request."),
-  });
-
-  const disabledClose = !fresh || !compatibleEA || rawTrades.length === 0 || closeAll.isPending;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 pb-24">
@@ -241,66 +179,26 @@ function Dashboard() {
           </span>
         </Link>
       )}<section className="relative isolate overflow-hidden rounded-2xl border border-sky-400/30 bg-gradient-to-br from-[#071321] via-[#0b1c30] to-[#10172d] shadow-[0_18px_55px_-28px_rgba(14,165,233,.65)]">
-        <div className="flex items-center justify-between border-b border-sky-300/15 bg-gradient-to-r from-sky-400/10 via-transparent to-violet-400/10 px-4 py-3"><div><p className="text-sm font-bold tracking-[0.18em] text-white">TRADE</p><p className="text-[10px] uppercase tracking-wider text-slate-400">MOPSENTRY · MT5 TERMINAL</p></div><span className={cn("rounded-md px-2 py-1 text-[10px] font-bold tracking-wider",fresh?"bg-emerald-400/10 text-emerald-400":"bg-slate-500/15 text-slate-400")}>{fresh?"CONNECTED":"OFFLINE"}</span></div>
-        <div className="grid grid-cols-3 divide-x divide-[#20364e] border-b border-[#20364e]">{[["BALANCE",displayMoney(balance)],["EQUITY",displayMoney(equity)],["FLOATING P/L",floatingPnl==null?"—":`${floatingPnl>=0?"+":""}${displayMoney(floatingPnl)}`]].map(([label,value],i)=><div key={label} className="px-3 py-3"><p className="text-[10px] uppercase text-slate-400">{label}</p><p className={cn("num mt-1 text-sm font-semibold",i===2&&floatingPnl!=null?(floatingPnl>=0?"text-emerald-400":"text-rose-400"):"text-white")}>{value}</p></div>)}</div>
-        <div className="flex items-center justify-between px-4 py-3"><p className="text-xs font-semibold text-white">POSITIONS</p><span className="rounded-full bg-[#18314a] px-2.5 py-1 text-[10px] font-bold text-sky-300">{fresh?rawTrades.length:"—"} OPEN</span></div>
-        {fresh&&rawTrades.length>0?<div className="overflow-x-auto px-3 pb-3"><div className="min-w-[650px]"><div className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] gap-2 border-y border-[#20364e] bg-[#0d1d2e] px-2 py-2 text-[9px] font-bold uppercase tracking-wide text-slate-400"><span>Symbol</span><span>Volume</span><span>Price</span><span>Market</span><span>S/L</span><span>T/P</span><span className="text-right">Profit</span></div>{rawTrades.map((trade,index)=>{const side=String(trade["side"]??trade["type"]??"BUY").toUpperCase();const pnl=Number(trade["profit"]??trade["pnl"]??0);return <div key={String(trade["ticket"]??index)} className="grid grid-cols-[1.1fr_.55fr_1fr_1fr_.75fr_.75fr_.9fr] items-center gap-2 border-b border-[#20364e]/70 px-2 py-3 text-[11px] text-slate-200 last:border-0"><span><span className="block font-semibold text-white">{String(trade["symbol"]??trade["pair"]??"—")}</span><span className={cn("text-[9px] font-bold",side.includes("SELL")?"text-rose-400":"text-emerald-400")}>{side}</span></span><span className="num">{Number(trade["lots"]??trade["volume"]??0).toFixed(2)}</span><span className="num">{String(trade["open_price"]??trade["open"]??"—")}</span><span className="num">{String(trade["current_price"]??trade["current"]??"—")}</span><span className="num">{String(trade["sl"]??trade["stop_loss"]??"—")}</span><span className="num">{String(trade["tp"]??trade["take_profit"]??"—")}</span><span className={cn("num text-right font-semibold",pnl>=0?"text-emerald-400":"text-rose-400")}>{displayMoney(pnl)}</span></div>})}</div></div>:<p className="px-4 pb-4 text-xs text-slate-400">{fresh?"No open positions.":"Live positions appear here when MT5 reconnects."}</p>}
-      
-        <div className="flex items-center justify-between gap-3 border-t border-[#20364e] px-4 py-3"><span className="text-[10px] text-slate-400">MT5 positions & pending orders</span><Button variant="destructive" size="sm" disabled={disabledClose} onClick={() => setCloseDialogOpen(true)}><Power className="mr-2 h-4 w-4" />Close All Positions</Button></div>
-              <details className="group relative isolate overflow-hidden rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-500/[0.10] via-card to-fuchsia-500/[0.04] shadow-[0_8px_30px_-18px_rgba(167,139,250,0.45)] transition-all duration-300 open:border-violet-400/50 open:shadow-[0_12px_36px_-16px_rgba(167,139,250,0.28)]">
-        <summary className="flex cursor-pointer list-none items-center gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-violet-300/25 bg-violet-400/10 text-xl text-violet-300 shadow-inner">⌁</span>
-          <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300/80">EXECUTION QUEUE</span><span className="mt-0.5 block font-semibold">Pending orders</span><span className="mt-0.5 block text-xs text-muted-foreground">Orders waiting for activation</span></span>
-          <span className="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1.5 text-xs font-bold tabular-nums text-violet-200">{fresh ? pendingOrders.length : "—"} <span className="font-medium opacity-70">WAITING</span></span>
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-400/10 text-violet-200 transition-transform duration-300 group-open:rotate-180">⌄</span>
-        </summary>
-        <div className="border-t p-4">
-        <div className="space-y-2">
-          {pendingOrders.length === 0 ? (
-            <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-              {fresh ? "No pending orders reported by MT5." : "No fresh pending-order data available."}
-            </div>
-          ) : (
-            pendingOrders.map((order, i) => {
-              const type = String(order["type"] ?? "PENDING").replaceAll("_", " ");
-              const entry = Number(order["entry_price"] ?? 0);
-              const volume = Number(order["volume"] ?? 0);
-              const ticket = String(order["ticket"] ?? i);
-              return (
-                <div key={ticket} className="rounded-xl border bg-card p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{String(order["symbol"] ?? "")}</p>
-                      <p className="num text-xs text-muted-foreground">{type} · {volume} lots · #{ticket}</p>
-                    </div>
-                    <p className="num text-sm font-semibold">@ {entry}</p>
-                  </div>
-                  <p className="num mt-2 text-xs text-muted-foreground">
-                    SL: {order["sl"] == null ? "—" : String(order["sl"])} · TP: {order["tp"] == null ? "—" : String(order["tp"])}
-                    {order["expiration"] ? " · Expires " + String(order["expiration"]) : ""}
-                  </p>
-                </div>
-              );
-            })
-          )}
+        <div className="flex items-center justify-between border-b border-sky-300/15 bg-gradient-to-r from-sky-400/10 via-transparent to-violet-400/10 px-4 py-3">
+          <div><p className="text-sm font-bold tracking-[0.18em] text-white">ACCOUNT SNAPSHOT</p><p className="text-[10px] uppercase tracking-wider text-slate-400">MOPSENTRY · MT5 TERMINAL</p></div>
+          <span className={cn("rounded-md px-2 py-1 text-[10px] font-bold tracking-wider",fresh?"bg-emerald-400/10 text-emerald-400":"bg-slate-500/15 text-slate-400")}>{fresh?"CONNECTED":"OFFLINE"}</span>
         </div>
+        <div className="border-b border-[#20364e] px-4 py-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">ACCOUNT BALANCE</p>
+          <p className="num mt-2 text-2xl font-black text-white">{displayMoney(balance)}</p>
         </div>
-      </details>
-</section>
+        <div className="grid grid-cols-2 divide-x divide-[#20364e]">
+          <div className="px-4 py-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">OPEN TRADES</p><p className="num mt-2 text-2xl font-black text-sky-300">{openTradeCount ?? "—"}</p></div>
+          <div className="px-4 py-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">PENDING ORDERS</p><p className="num mt-2 text-2xl font-black text-violet-300">{pendingOrderCount ?? "—"}</p></div>
+        </div>
+      </section>
 
       <Button variant="outline" className="w-full justify-between rounded-xl border-cyan-400/25 bg-gradient-to-r from-cyan-500/10 to-blue-500/5 py-5" onClick={() => setBreakEvenDialogOpen(true)}><span className="flex items-center gap-2"><span className="text-cyan-300">⌁</span>Break-Even Protection</span><span className={cn("rounded-full px-3 py-1 text-[10px] font-bold",s.break_even_enabled?"bg-emerald-400/15 text-emerald-300":"bg-slate-500/15 text-slate-300")}>{s.break_even_enabled?"ON":"OFF"} · Configure</span></Button>
 
 
 
 
-      {fresh && !compatibleEA && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-          <Activity className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-          <p className="text-muted-foreground">
-            Update MT5 to MOPSENTRY EA v1.76 to enable Close All and full-account pending-order sync. The current EA version does not identify itself as compatible yet.
-          </p>
-        </div>
-      )}
+
 
 
 
@@ -316,25 +214,7 @@ function Dashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Close all MOPSENTRY positions?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This sends a command to the connected MT5 EA. It targets positions with MOPSENTRY's magic number across symbols; manual trades are left alone. Closing positions can realise losses, and the request may take a few seconds to reach MT5.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={closeAll.isPending}>Cancel</AlertDialogCancel>
-            <Button variant="destructive" disabled={disabledClose} onClick={() => closeAll.mutate()}>
-              {closeAll.isPending ? <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Sending…</> : "Confirm Close All"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </div>
   );
 }
