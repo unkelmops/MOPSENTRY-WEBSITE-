@@ -67,7 +67,7 @@ const strategies = [
     tone: "violet",
   },
   {
-    id: "grid",
+    id: "ny_open",
     label: "NY Open",
     description: "New York cash-open volatility strategy with opening-range breakout confirmation.",
     detail: "Waits for the configured New York opening window and confirms a range break before entry.",
@@ -298,7 +298,7 @@ function Control() {
           </div>
         </Section>
 
-        {s.strategy === "grid" && (
+        {s.strategy === "ny_open" && (
           <Section title="NY Open Volatility" value={s.ny_open_entry_method === "breakout" ? "Breakout" : "Immediate"} icon={Waves} accent="amber">
             <p className="mb-3 text-[11px] text-muted-foreground">New York Stock Exchange opening bell · automatically follows America/New_York daylight-saving time.</p>
             <div className="grid grid-cols-3 gap-2">
