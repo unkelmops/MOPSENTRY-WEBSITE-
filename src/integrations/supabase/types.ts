@@ -740,6 +740,16 @@ export type Database = {
           strategy: string
           timeframe: string
           higher_timeframe: string
+          ny_open_entry_method: string
+          ny_open_entry_offset_minutes: number
+          ny_open_direction_filter: string
+          ny_open_range_minutes: number
+          ny_open_max_entries: number
+          ny_open_stop_loss_points: number
+          ny_open_take_profit_points: number
+          ny_open_basket_target: number
+          ny_open_daily_loss_limit: number
+          ny_open_entry_window_minutes: number
           updated_at: string
           user_id: string
         }
@@ -756,6 +766,16 @@ export type Database = {
           strategy?: string
           timeframe?: string
           higher_timeframe?: string
+          ny_open_entry_method?: string
+          ny_open_entry_offset_minutes?: number
+          ny_open_direction_filter?: string
+          ny_open_range_minutes?: number
+          ny_open_max_entries?: number
+          ny_open_stop_loss_points?: number
+          ny_open_take_profit_points?: number
+          ny_open_basket_target?: number
+          ny_open_daily_loss_limit?: number
+          ny_open_entry_window_minutes?: number
           updated_at?: string
           user_id: string
         }
@@ -772,6 +792,16 @@ export type Database = {
           strategy?: string
           timeframe?: string
           higher_timeframe?: string
+          ny_open_entry_method?: string
+          ny_open_entry_offset_minutes?: number
+          ny_open_direction_filter?: string
+          ny_open_range_minutes?: number
+          ny_open_max_entries?: number
+          ny_open_stop_loss_points?: number
+          ny_open_take_profit_points?: number
+          ny_open_basket_target?: number
+          ny_open_daily_loss_limit?: number
+          ny_open_entry_window_minutes?: number
           updated_at?: string
           user_id?: string
         }
