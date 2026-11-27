@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 export type TradingAccount = Database["public"]["Tables"]["trading_accounts"]["Row"];
+export type TradingAccountSnapshot = Pick<TradingAccount, "status" | "broker_server" | "login" | "balance" | "account_currency" | "last_heartbeat" | "open_trade_count" | "pending_order_count" | "ea_state" | "ea_version">;
 
 export const tradingAccountQuery = queryOptions({
   queryKey: ["trading-account"],
@@ -11,7 +12,7 @@ export const tradingAccountQuery = queryOptions({
   refetchInterval: 15_000,
   refetchIntervalInBackground: false,
   refetchOnWindowFocus: true,
-  queryFn: async (): Promise<TradingAccount> => {
+  queryFn: async (): Promise<TradingAccountSnapshot> => {
     // The cached session avoids an extra auth round-trip on every refresh.
     // Supabase RLS still enforces access to the signed-in user's row.
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
