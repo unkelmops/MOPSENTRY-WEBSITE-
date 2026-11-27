@@ -6,9 +6,9 @@ export type TradingAccount = Database["public"]["Tables"]["trading_accounts"]["R
 
 export const tradingAccountQuery = queryOptions({
   queryKey: ["trading-account"],
-  // Full account snapshot: positions, pending orders and account metadata refresh every 5 seconds.
-  staleTime: 3_000,
-  refetchInterval: 5_000,
+  // Lightweight account snapshot: balance, counts and connection metadata.
+  staleTime: 10_000,
+  refetchInterval: 15_000,
   refetchIntervalInBackground: false,
   refetchOnWindowFocus: true,
   queryFn: async (): Promise<TradingAccount> => {
@@ -19,7 +19,7 @@ export const tradingAccountQuery = queryOptions({
     if (sessionError || !userId) throw new Error("Please sign in again.");
     const { data, error } = await supabase
       .from("trading_accounts")
-      .select("*")
+      .select("status,broker_server,login,balance,account_currency,last_heartbeat,open_trade_count,pending_order_count,ea_state,ea_version")
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw error;
@@ -66,8 +66,8 @@ export async function regenerateConnectionKey() {
 
 export const tradingAccountBalanceQuery = queryOptions({
   queryKey: ["trading-account-balance"],
-  staleTime: 1_000,
-  refetchInterval: 2_000,
+  staleTime: 10_000,
+  refetchInterval: 15_000,
   refetchIntervalInBackground: false,
   refetchOnWindowFocus: true,
   queryFn: async () => {
@@ -76,7 +76,7 @@ export const tradingAccountBalanceQuery = queryOptions({
     if (sessionError || !userId) throw new Error("Please sign in again.");
     const { data, error } = await supabase
       .from("trading_accounts")
-      .select("status,balance,equity,account_currency,last_heartbeat,ea_version")
+      .select("status,balance,account_currency,last_heartbeat,open_trade_count,pending_order_count,ea_version")
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw error;
