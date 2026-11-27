@@ -54,10 +54,10 @@ const strategies = [
   },
   {
     id: "grid",
-    label: "Grid",
-    description: "Liquidity-sweep logic around previous swing levels.",
-    detail: "Places pending orders only when the reclaim setup and trade cap allow it.",
-    orderComment: "MOPSENTRY - GRID",
+    label: "NY Open",
+    description: "New York cash-open volatility strategy with opening-range breakout confirmation.",
+    detail: "Waits for the configured New York opening window and confirms a range break before entry.",
+    orderComment: "MOPSENTRY - NY OPEN",
     icon: Layers3,
     tone: "amber",
   },
@@ -108,6 +108,16 @@ function Control() {
     Number(s.lot_size) !== Number(savedSettings.lot_size) ||
     Number(s.risk_percent) !== Number(savedSettings.risk_percent) ||
     s.max_trades !== savedSettings.max_trades ||
+    s.ny_open_entry_method !== savedSettings.ny_open_entry_method ||
+    s.ny_open_entry_offset_minutes !== savedSettings.ny_open_entry_offset_minutes ||
+    s.ny_open_direction_filter !== savedSettings.ny_open_direction_filter ||
+    s.ny_open_range_minutes !== savedSettings.ny_open_range_minutes ||
+    s.ny_open_max_entries !== savedSettings.ny_open_max_entries ||
+    Number(s.ny_open_stop_loss_points) !== Number(savedSettings.ny_open_stop_loss_points) ||
+    Number(s.ny_open_take_profit_points) !== Number(savedSettings.ny_open_take_profit_points) ||
+    Number(s.ny_open_basket_target) !== Number(savedSettings.ny_open_basket_target) ||
+    Number(s.ny_open_daily_loss_limit) !== Number(savedSettings.ny_open_daily_loss_limit) ||
+    s.ny_open_entry_window_minutes !== savedSettings.ny_open_entry_window_minutes ||
     s.alerts_enabled !== savedSettings.alerts_enabled ||
     JSON.stringify(s.pairs) !== JSON.stringify(savedSettings.pairs);
 
@@ -142,6 +152,16 @@ function Control() {
         alerts_enabled: s.alerts_enabled,
         break_even_enabled: s.break_even_enabled,
         break_even_trigger: s.break_even_trigger,
+        ny_open_entry_method: s.ny_open_entry_method,
+        ny_open_entry_offset_minutes: s.ny_open_entry_offset_minutes,
+        ny_open_direction_filter: s.ny_open_direction_filter,
+        ny_open_range_minutes: s.ny_open_range_minutes,
+        ny_open_max_entries: s.ny_open_max_entries,
+        ny_open_stop_loss_points: s.ny_open_stop_loss_points,
+        ny_open_take_profit_points: s.ny_open_take_profit_points,
+        ny_open_basket_target: s.ny_open_basket_target,
+        ny_open_daily_loss_limit: s.ny_open_daily_loss_limit,
+        ny_open_entry_window_minutes: s.ny_open_entry_window_minutes,
       },
       { onSuccess: () => toast.success("Settings saved. You can now press Start.") },
     );
@@ -263,6 +283,44 @@ function Control() {
             <p className="mt-2 font-mono text-[10px] text-cyan-300">{selectedStrategy.orderComment}</p>
           </div>
         </Section>
+
+                </Section>
+
+        {s.strategy === "grid" && (
+          <Section title="NY Open Volatility" value={s.ny_open_entry_method === "breakout" ? "Breakout" : "Immediate"} icon={Waves} accent="amber">
+            <p className="mb-3 text-[11px] text-muted-foreground">New York Stock Exchange opening bell · automatically follows America/New_York daylight-saving time.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([{value:2,label:"16:28 SAST"},{value:1,label:"16:29 SAST"},{value:0,label:"16:30 SAST"}] as const).map((o) => (
+                <TimeButton key={o.value} active={s.ny_open_entry_offset_minutes === o.value} onClick={() => setS({...s,ny_open_entry_offset_minutes:o.value})}>{o.label}</TimeButton>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">These are the current South African equivalents. The EA must calculate the New York opening time using the US DST calendar.</p>
+            <label className="mt-3 block text-xs font-semibold">Entry method</label>
+            <select className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 p-2 text-sm" value={s.ny_open_entry_method} onChange={(e) => setS({...s,ny_open_entry_method:e.target.value as "breakout"|"immediate"})}>
+              <option value="breakout">Opening-range breakout confirmation</option><option value="immediate">Immediate entry at selected time</option>
+            </select>
+            <label className="mt-3 block text-xs font-semibold">Direction</label>
+            <select className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 p-2 text-sm" value={s.ny_open_direction_filter} onChange={(e) => setS({...s,ny_open_direction_filter:e.target.value as "htf"|"buy_only"|"sell_only"})}>
+              <option value="htf">Follow higher-timeframe bias</option><option value="buy_only">Buy only</option><option value="sell_only">Sell only</option>
+            </select>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {([
+                ["Opening range (minutes)","ny_open_range_minutes",s.ny_open_range_minutes,1,30],
+                ["Maximum entries","ny_open_max_entries",s.ny_open_max_entries,1,10],
+                ["Stop loss (points)","ny_open_stop_loss_points",s.ny_open_stop_loss_points,0,100000],
+                ["Take profit (points)","ny_open_take_profit_points",s.ny_open_take_profit_points,0,100000],
+                ["Basket target (account currency)","ny_open_basket_target",s.ny_open_basket_target,0,1000000],
+                ["Daily loss limit (account currency)","ny_open_daily_loss_limit",s.ny_open_daily_loss_limit,0,1000000],
+                ["Entry window (minutes)","ny_open_entry_window_minutes",s.ny_open_entry_window_minutes,1,60],
+              ] as const).map(([label,key,value,min,max]) => (
+                <label key={key} className="block text-xs font-semibold">{label}
+                  <input type="number" min={min} max={max} value={value} onChange={(e) => setS({...s,[key]:Number(e.target.value)} as RobotSettings)} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 p-2 text-sm" />
+                </label>
+              ))}
+            </div>
+            <p className="mt-3 text-[10px] text-amber-200">For safety, the EA must refuse NY Open entries until both stop loss and take profit are configured above zero. A daily loss limit should also be set before enabling this strategy.</p>
+          </Section>
+        )}
 
         <Section title="Timeframe matrix" value={`${s.timeframe} / ${s.higher_timeframe}`} icon={Activity} accent="cyan">
           <div className="rounded-xl border border-cyan-300/20 bg-cyan-400/[0.045] p-3">
