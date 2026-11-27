@@ -284,8 +284,6 @@ function Control() {
           </div>
         </Section>
 
-                </Section>
-
         {s.strategy === "grid" && (
           <Section title="NY Open Volatility" value={s.ny_open_entry_method === "breakout" ? "Breakout" : "Immediate"} icon={Waves} accent="amber">
             <p className="mb-3 text-[11px] text-muted-foreground">New York Stock Exchange opening bell · automatically follows America/New_York daylight-saving time.</p>
