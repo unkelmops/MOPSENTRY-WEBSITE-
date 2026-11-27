@@ -28,7 +28,7 @@ export const robotSettingsQuery = queryOptions({
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw error;
-    if (data) return data;
+    if (data) return { ...data, strategy: data.strategy === "grid" ? "ny_open" : data.strategy } as RobotSettings;
     const { data: created, error: insErr } = await supabase
       .from("robot_settings")
       .insert({ user_id: userId })
@@ -44,7 +44,7 @@ export async function saveRobotSettings(patch: Partial<RobotSettings>) {
   if (patch.higher_timeframe !== undefined) higherTimeframeSchema.parse(patch.higher_timeframe);
   if (patch.break_even_trigger !== undefined && (!Number.isFinite(Number(patch.break_even_trigger)) || Number(patch.break_even_trigger) <= 0)) throw new Error("Break-even trigger must be greater than zero.");
   if (patch.scalper_frequency !== undefined) scalperFrequencySchema.parse(patch.scalper_frequency);
-  if (patch.strategy === "grid") {
+  if (patch.strategy === "ny_open") {
     const positive = (value: unknown) => Number.isFinite(Number(value)) && Number(value) > 0;
     if (patch.ny_open_entry_method !== undefined && !["breakout", "immediate"].includes(patch.ny_open_entry_method)) throw new Error("Choose a valid New York entry method.");
     if (patch.ny_open_entry_offset_minutes !== undefined && ![0, 1, 2].includes(Number(patch.ny_open_entry_offset_minutes))) throw new Error("Choose 16:28, 16:29 or 16:30 SAST.");
