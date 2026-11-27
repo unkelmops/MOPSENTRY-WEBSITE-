@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Bot, Radio, Link2, LogOut, MoreVertical, UserRound, Server } from "lucide-react";
+import { LayoutDashboard, Bot, Radio, Link2, LogOut, MoreVertical, UserRound, Server, Settings as SettingsIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ThemePicker } from "@/components/theme-picker";
 import { useEffect, useState } from "react";
@@ -27,6 +27,7 @@ function AppLayout() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [currency, setCurrency] = useState("ZAR");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => { try { const saved = localStorage.getItem("mopsentry-currency"); if (saved && /^[A-Z]{3}$/.test(saved)) setCurrency(saved); } catch { /* optional storage */ } }, []);
   const changeCurrency = (next: string) => { setCurrency(next); try { localStorage.setItem("mopsentry-currency", next); } catch { /* current session only */ } window.dispatchEvent(new Event("mopsentry-currency-change")); };
   const signOut = async () => {
@@ -46,7 +47,7 @@ function AppLayout() {
           loading="lazy"
           className="h-10 w-auto"
         />
-        <Sheet>
+        <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
           <SheetTrigger asChild>
             <button aria-label="Settings" className="rounded-lg p-2 text-muted-foreground hover:bg-accent">
               <MoreVertical className="h-5 w-5" />
@@ -119,6 +120,16 @@ function AppLayout() {
               <span className={label === "Robot" ? "-mt-2" : ""}>{label}</span>
             </Link>
           ))}
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Open settings"
+            aria-haspopup="dialog"
+            className="flex min-h-14 flex-col items-center justify-center gap-1 pb-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-primary"
+          >
+            <SettingsIcon className="h-5 w-5" />
+            <span>Settings</span>
+          </button>
         </div>
       </nav>
     </div>
