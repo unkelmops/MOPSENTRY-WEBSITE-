@@ -126,7 +126,7 @@ Deno.serve(async (req: Request) => {
   if (commandError) return json({ ok: false, error: "command_lookup_failed" }, 500);
 
   const { data: settings, error: settingsError } = await supabase.from("robot_settings")
-    .select("is_running,strategy,timeframe,higher_timeframe,scalper_frequency,lot_size,risk_percent,max_trades,pairs,alerts_enabled,break_even_enabled,break_even_trigger")
+    .select("is_running,strategy,timeframe,higher_timeframe,scalper_frequency,lot_size,risk_percent,max_trades,pairs,alerts_enabled,break_even_enabled,break_even_trigger,ny_open_entry_method,ny_open_entry_offset_minutes,ny_open_direction_filter,ny_open_range_minutes,ny_open_max_entries,ny_open_stop_loss_points,ny_open_take_profit_points,ny_open_basket_target,ny_open_daily_loss_limit,ny_open_entry_window_minutes")
     .eq("user_id", account.user_id).maybeSingle();
   if (settingsError) return json({ ok: false, error: "settings_lookup_failed" }, 500);
 
@@ -148,6 +148,16 @@ Deno.serve(async (req: Request) => {
     breakeven_buffer: 0.0,
     // Keep the EA's profit target aligned with the app's configured break-even trigger.
     breakeven_profit_target: settings?.break_even_trigger ?? 10.00,
+    ny_open_entry_method: settings?.ny_open_entry_method ?? "breakout",
+    ny_open_entry_offset_minutes: settings?.ny_open_entry_offset_minutes ?? 0,
+    ny_open_direction_filter: settings?.ny_open_direction_filter ?? "htf",
+    ny_open_range_minutes: settings?.ny_open_range_minutes ?? 5,
+    ny_open_max_entries: settings?.ny_open_max_entries ?? 1,
+    ny_open_stop_loss_points: settings?.ny_open_stop_loss_points ?? 0,
+    ny_open_take_profit_points: settings?.ny_open_take_profit_points ?? 0,
+    ny_open_basket_target: settings?.ny_open_basket_target ?? 0,
+    ny_open_daily_loss_limit: settings?.ny_open_daily_loss_limit ?? 0,
+    ny_open_entry_window_minutes: settings?.ny_open_entry_window_minutes ?? 15,
   };
 
   return json({
