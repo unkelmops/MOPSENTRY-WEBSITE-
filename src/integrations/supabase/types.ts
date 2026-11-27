@@ -837,6 +837,8 @@ export type Database = {
           login?: string
           open_trades?: Json | null
           pending_orders?: Json | null
+          open_trade_count?: number
+          pending_order_count?: number
           platform?: string
           status?: string
           updated_at?: string
