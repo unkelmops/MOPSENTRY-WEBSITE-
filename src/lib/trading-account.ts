@@ -64,23 +64,3 @@ export async function regenerateConnectionKey() {
   if (typeof data !== "string" || !data) throw new Error("The new connection key was not returned.");
   return data;
 }
-
-export const tradingAccountBalanceQuery = queryOptions({
-  queryKey: ["trading-account-balance"],
-  staleTime: 10_000,
-  refetchInterval: 15_000,
-  refetchIntervalInBackground: false,
-  refetchOnWindowFocus: true,
-  queryFn: async () => {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    const userId = sessionData.session?.user.id;
-    if (sessionError || !userId) throw new Error("Please sign in again.");
-    const { data, error } = await supabase
-      .from("trading_accounts")
-      .select("status,balance,account_currency,last_heartbeat,open_trade_count,pending_order_count,ea_version")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-});
