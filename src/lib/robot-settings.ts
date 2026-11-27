@@ -50,6 +50,7 @@ export async function saveRobotSettings(patch: Partial<RobotSettings>) {
     if (patch.ny_open_entry_offset_minutes !== undefined && ![0, 1, 2].includes(Number(patch.ny_open_entry_offset_minutes))) throw new Error("Choose 16:28, 16:29 or 16:30 SAST.");
     if (patch.ny_open_direction_filter !== undefined && !["htf", "buy_only", "sell_only"].includes(patch.ny_open_direction_filter)) throw new Error("Choose a valid direction filter.");
     if (!positive(patch.ny_open_stop_loss_points)) throw new Error("NY Open requires a stop loss greater than zero points.");
+    if (!positive(patch.ny_open_take_profit_points)) throw new Error("NY Open requires a take profit greater than zero points.");
     if (!positive(patch.ny_open_daily_loss_limit)) throw new Error("NY Open requires a daily loss limit greater than zero in the account currency.");
     const range = Number(patch.ny_open_range_minutes);
     const entries = Number(patch.ny_open_max_entries);
