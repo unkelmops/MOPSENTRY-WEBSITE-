@@ -3,7 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { higherTimeframeSchema, scalperFrequencySchema, timeframeSchema } from "./robot-options";
 
-export type RobotSettings = Database["public"]["Tables"]["robot_settings"]["Row"];
+export type RobotSettings = Database["public"]["Tables"]["robot_settings"]["Row"] & {
+  ny_open_entry_method: "breakout" | "immediate";
+  ny_open_entry_offset_minutes: 0 | 1 | 2;
+  ny_open_direction_filter: "htf" | "buy_only" | "sell_only";
+  ny_open_range_minutes: number;
+  ny_open_max_entries: number;
+  ny_open_stop_loss_points: number;
+  ny_open_take_profit_points: number;
+  ny_open_basket_target: number;
+  ny_open_daily_loss_limit: number;
+  ny_open_entry_window_minutes: number;
+};
 
 export const robotSettingsQuery = queryOptions({
   queryKey: ["robot-settings"],
