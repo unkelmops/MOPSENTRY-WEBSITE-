@@ -25,6 +25,20 @@ export const Route = createFileRoute("/_authenticated/control")({
   component: Control,
 });
 
+function nyOpenSastLabel(minutesBeforeOpen: number) {
+  const now = new Date();
+  const ny = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const hour = Number(ny.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(ny.find((part) => part.type === "minute")?.value ?? 0);
+  const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  let nyOffsetMinutes = hour * 60 + minute - utcMinutes;
+  if (nyOffsetMinutes > 720) nyOffsetMinutes -= 1440;
+  if (nyOffsetMinutes < -720) nyOffsetMinutes += 1440;
+  let sastMinutes = 9 * 60 + 30 + 120 - nyOffsetMinutes - minutesBeforeOpen;
+  sastMinutes = ((sastMinutes % 1440) + 1440) % 1440;
+  return `${String(Math.floor(sastMinutes / 60)).padStart(2, "0")}:${String(sastMinutes % 60).padStart(2, "0")} SAST`;
+}
+
 const pairLabels: Record<string, string> = {
   XAUUSD: "XAUUSD · Gold",
   US30: "US30 · Dow Jones",
@@ -288,11 +302,11 @@ function Control() {
           <Section title="NY Open Volatility" value={s.ny_open_entry_method === "breakout" ? "Breakout" : "Immediate"} icon={Waves} accent="amber">
             <p className="mb-3 text-[11px] text-muted-foreground">New York Stock Exchange opening bell · automatically follows America/New_York daylight-saving time.</p>
             <div className="grid grid-cols-3 gap-2">
-              {([{value:2,label:"16:28 SAST"},{value:1,label:"16:29 SAST"},{value:0,label:"16:30 SAST"}] as const).map((o) => (
+              {([{value:2,label:nyOpenSastLabel(2)},{value:1,label:nyOpenSastLabel(1)},{value:0,label:nyOpenSastLabel(0)}] as const).map((o) => (
                 <TimeButton key={o.value} active={s.ny_open_entry_offset_minutes === o.value} onClick={() => setS({...s,ny_open_entry_offset_minutes:o.value})}>{o.label}</TimeButton>
               ))}
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">These are the current South African equivalents. The EA must calculate the New York opening time using the US DST calendar.</p>
+            <p className="mt-2 text-[10px] text-muted-foreground">The displayed South African times automatically follow New York daylight-saving changes.</p>
             <label className="mt-3 block text-xs font-semibold">Entry method</label>
             <select className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 p-2 text-sm" value={s.ny_open_entry_method} onChange={(e) => setS({...s,ny_open_entry_method:e.target.value as "breakout"|"immediate"})}>
               <option value="breakout">Opening-range breakout confirmation</option><option value="immediate">Immediate entry at selected time</option>
@@ -316,7 +330,7 @@ function Control() {
                 </label>
               ))}
             </div>
-            <p className="mt-3 text-[10px] text-amber-200">For safety, the EA must refuse NY Open entries until both stop loss and take profit are configured above zero. A daily loss limit should also be set before enabling this strategy.</p>
+            <p className="mt-3 text-[10px] text-amber-200">The EA blocks NY Open entries unless stop loss, take profit and a daily loss limit are all set above zero.</p>
           </Section>
         )}
 
